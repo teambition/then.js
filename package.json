@@ -2,7 +2,7 @@
   "name": "then.js",
   "description": "The smallest promise!",
   "author": "zensh",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "then.js",
   "repository": "git://github.com/zensh/then.js",
   "homepage": "https://github.com/zensh/then.js",
