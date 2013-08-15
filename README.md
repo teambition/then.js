@@ -1,6 +1,6 @@
 then.js
 ====
-another very small promise!
+Another very small promise!
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
@@ -28,6 +28,8 @@ then.js不同于其它promise，它没有`resolve`、也没有`reject`、更没�
 then.js只有`then`对象，它包括`then`、`defer`和`fail`三个方法，无需封装，直接将异步任务写入then()!
 
 **Node.js:**
+
+    npm install then.js
 
     var then = require('then.js');
 

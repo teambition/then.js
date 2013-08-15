@@ -2,8 +2,8 @@
 /*global module, process*/
 
 /*!
- * then.js, version 0.2.0, 2013/08/14
- * The smallest promise!
+ * then.js, version 0.2.1, 2013/08/15
+ * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
  * License: MIT

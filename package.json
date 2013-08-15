@@ -1,11 +1,29 @@
 {
   "name": "then.js",
-  "description": "The smallest promise!",
-  "author": "zensh",
-  "version": "0.2.0",
+  "description": "Another very small promise!",
+  "author": {
+    "name": "zensh"
+  },
+  "version": "0.2.1",
   "main": "then.js",
-  "repository": "git://github.com/zensh/then.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/zensh/then.js"
+  },
   "homepage": "https://github.com/zensh/then.js",
-  "keywords": ["promise", "then"],
-  "tags": ["promise", "then"]
+  "keywords": [
+    "promise",
+    "then"
+  ],
+  "tags": [
+    "promise",
+    "then"
+  ],
+  "readme": "then.js\r\n====\r\nanother very small promise!\r\n\r\n**能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**\r\n\r\nthen.js不同于其它promise，它没有`resolve`、也没有`reject`、更没有`promise`对象，所以你不再需要把异步任务封装成promise对象。\r\n\r\n一个典型的promise都要封装：\r\n\r\n    function getFile() {\r\n        var deferred = Q.defer();\r\n\r\n        FS.readFile(\"foo.txt\", \"utf-8\", function (error, text) {\r\n            if (error) {\r\n                deferred.reject(new Error(error));\r\n            } else {\r\n                deferred.resolve(text);\r\n            }\r\n        });\r\n        return deferred.promise;\r\n    }\r\n\r\n    getFile().then(successHandler[, errorHandler]);\r\n\r\n若要进入下一个then链，上面then中的successHandler、errorHandler还得进行如上类似封装，搞得挺复杂！\r\n\r\nthen.js只有`then`对象，它包括`then`、`defer`和`fail`三个方法，无需封装，直接将异步任务写入then()!\r\n\r\n**Node.js:**\r\n\r\n    var then = require('then.js');\r\n\r\n**Browser:**\r\n\r\n    <script src=\"/pathTo/then.js\"></script>\r\n\r\n\r\n**语法：**\r\n\r\n    then(startAsnysFn).\r\n    then(successHandler[, errorHandler]).\r\n    then(successHandler[, errorHandler]).\r\n    then(successHandler[, errorHandler]).\r\n    fail(globalErrorHandler);\r\n\r\n**示例：**\r\n\r\n    then(function (defer) {\r\n        // start asnys task\r\n        // use defer as callback function\r\n        asnycTask1(param, defer);\r\n    }).\r\n    then(function (defer, value1, ...) {\r\n        // successHandler, value1, ... from asnycTask1\r\n        asnycTask2(value1, ..., defer);\r\n    }, function (defer, err) {\r\n        // errorHandler, err from asnycTask1\r\n        console.error(err);\r\n    }).\r\n    then(function (defer, value) {\r\n        // successHandler, value from asnycTask2\r\n        asnycTask3(value, defer);\r\n    }).\r\n    then(function (defer, value) {\r\n        // successHandler, value from asnycTask3\r\n        asnycTask4(value, defer);\r\n    }).\r\n    fail(function (err) {\r\n        // global errorHandler, err from asnycTask2 or asnycTask3\r\n        console.error(err);\r\n    });\r\n\r\n**也可以这样用：**\r\n\r\n    function promiseGet(param) {\r\n        return then(function (defer) {\r\n            asnycTask(param, defer);\r\n        });\r\n    }\r\n\r\n    promiseGet(param1).then(successHandler).fail(errorHandler);\r\n\r\n\r\nthen.js中最关键的就是`defer`，then()中的函数，无论是`successHandler`还是`errorHandler`，第一个参数都是被注入的defer方法，defer的第一个参数永远是error，如果error存在，则调用下一个then中的errorHandler()或者fail()，不存在则调用下一个then中的successHandler。\r\n\r\n如果异步任务的callback的第一个参数为error，即callback(error, result1, ...)的形式，则可直接用defer代替异步任务的callback，如上面示例所示。Node.js中的异步函数基本都是这种形式，then.js用起来超方便。\r\n\r\n另外一个需要注意的就是`fail`，它能捕捉then链中的任何一个error，它是可选的。fail的优先级低于errorHandler，即then链定义了fail，且其中一个then定义了errorHandler，如果上一个then产生error，则error进入该errorHandler，由errorHandler决定终止还是继续；如果没有定义errorHandler，则error直接进入fail，并终止then链运行；如果fail也没有定义，则往上级抛出error。\r\n\r\n\r\n### Who Used\r\n\r\n + AngularJS中文社区：[http://angularjs.cn/]()\r\n\r\n### Examples\r\n\r\n    function asnycTask(n, callback) {\r\n        setTimeout(function () {\r\n            callback(null, n);\r\n        }, n * 1000);\r\n    }\r\n\r\n    then(function (defer) {\r\n        console.log(111);\r\n        asnycTask(1, defer);\r\n    }).then(function (defer, a) {\r\n        console.log(222, a);\r\n        asnycTask(2, defer);\r\n    }).then(function (defer, a) {\r\n        console.log(333, a);\r\n        asnycTask(3, function (err, b) {\r\n            console.log(3332, err, b);\r\n            defer(null, 'hello!', b);\r\n        });\r\n    }).then(function (defer, a, b) {\r\n        console.log(444, a, b);\r\n        defer('Error!');\r\n    }).then(null, function (defer, err) {\r\n        console.log(555, err);\r\n    }).fail(function (err) {\r\n        console.log(666, err);\r\n    });\r\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/zensh/then.js/issues"
+  },
+  "_id": "then.js@0.2.0",
+  "_from": "then.js@"
 }
