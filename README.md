@@ -40,11 +40,22 @@ then.js只有`then`对象，它包括`then`、`defer`和`fail`三个方法，无
 
 **语法：**
 
+promise模式：
+
     then(startAsnysFn).
     then(successHandler[, errorHandler]).
     then(successHandler[, errorHandler]).
     then(successHandler[, errorHandler]).
     fail(globalErrorHandler);
+
+async模式:
+
+    then.each(array, function (next, value, index, array) {
+        // some async task
+        asyncTask(value, function () {
+            return next ? next() : callback();
+        })
+    });
 
 **示例：**
 

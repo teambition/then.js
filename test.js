@@ -4,12 +4,14 @@
 var testThen = (function () {
     var fail;
 
+    function noop() {}
+
     function isFunction(fn) {
         return typeof fn === 'function';
     }
 
     function Promise() {
-        this._success = function () {};
+        this._success = noop;
     }
     Promise.prototype.defer = function (err) {
         if (err === null || err === undefined) {
@@ -20,11 +22,12 @@ var testThen = (function () {
             throw err;
         }
     };
+    Promise.prototype.defer._isDefer = true;
     Promise.prototype.then = function (successHandler, errorHandler) {
         var that = new Promise(),
             defer = that.defer.bind(that);
-        this._success = isFunction(successHandler) ? successHandler.bind(null, defer) : this._success;
-        this._error = isFunction(errorHandler) && errorHandler.bind(null, defer);
+        this._success = isFunction(successHandler) ? successHandler.bind(null, successHandler._isDefer ? null : defer) : this._success;
+        this._error = isFunction(errorHandler) && (errorHandler._isDefer ? errorHandler : errorHandler.bind(null, defer));
         return that;
     };
     Promise.prototype.fail = function (errorHandler) {
@@ -39,6 +42,18 @@ var testThen = (function () {
         nextTick(isFunction(startFn) ? startFn.bind(null, defer) : defer);
         return that;
     }
+
+    then.each = function (array, iterator, context) {
+        var i = -1,
+            end = array.length - 1;
+        iterator = iterator || noop;
+        next();
+
+        function next() {
+            i += 1;
+            iterator.call(context, i < end ? next : null, array[i], i, array);
+        }
+    };
 
     if (typeof module === 'object') {
         module.exports = then;
