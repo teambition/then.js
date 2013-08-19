@@ -37,6 +37,8 @@ then.js只有`then`对象，它包括`then`、`defer`和`fail`三个方法，无
 
     <script src="/pathTo/then.js"></script>
 
+**注意：then.js需要bind方法支持，IE8及以下请先加载es5-shim.js**
+
 
 **语法：**
 
@@ -46,7 +48,7 @@ promise模式：
     then(successHandler[, errorHandler]).
     then(successHandler[, errorHandler]).
     then(successHandler[, errorHandler]).
-    fail(globalErrorHandler);
+    fail(errorHandler);
 
 async模式:
 
@@ -79,7 +81,7 @@ async模式:
         // successHandler, value from asnycTask3
         asnycTask4(value, defer);
     }).
-    fail(function (err) {
+    fail(function (defer, err) {
         // global errorHandler, err from asnycTask2 or asnycTask3
         console.error(err);
     });
@@ -87,19 +89,20 @@ async模式:
 **也可以这样用：**
 
     function promiseGet(param) {
-        return then(function (defer) {
-            asnycTask(param, defer);
-        });
+        return then(startAsnysFn).
+        then(successHandler1).
+        then(successHandler2).
+        fail(errorHandler);
     }
 
-    promiseGet(param1).then(successHandler).fail(errorHandler);
+    promiseGet(param1).then(successHandler3).then(successHandler4).fail(errorHandler);
 
 
 then.js中最关键的就是`defer`，then()中的函数，无论是`successHandler`还是`errorHandler`，第一个参数都是被注入的defer方法，defer的第一个参数永远是error，如果error存在，则调用下一个then中的errorHandler()或者fail()，不存在则调用下一个then中的successHandler。
 
 如果异步任务的callback的第一个参数为error，即callback(error, result1, ...)的形式，则可直接用defer代替异步任务的callback，如上面示例所示。Node.js中的异步函数基本都是这种形式，then.js用起来超方便。
 
-另外一个需要注意的就是`fail`，它能捕捉then链中的任何一个error，它是可选的。fail的优先级低于errorHandler，即then链定义了fail，且其中一个then定义了errorHandler，如果上一个then产生error，则error进入该errorHandler，由errorHandler决定终止还是继续；如果没有定义errorHandler，则error直接进入fail，并终止then链运行；如果fail也没有定义，则往上级抛出error。
+另外一个需要注意的就是`fail`，它能捕捉fail之前的then链中的任何一个error，它是可选的。fail的优先级低于errorHandler，即then链定义了fail，且其中一个then定义了errorHandler，如果上一个then产生error，则error进入该errorHandler，由errorHandler决定终止还是继续；如果没有定义errorHandler，则error直接进入fail，如果fail也没有定义，则往上级抛出error。
 
 
 ### Who Used

@@ -2,7 +2,7 @@
 /*global module, process*/
 
 /*!
- * then.js, version 0.3.0, 2013/08/16
+ * then.js, version 0.5.0, 2013/08/19
  * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
@@ -10,50 +10,63 @@
  */
 
 (function () {
-    var fail;
+    var slice = Array.prototype.slice;
 
     function noop() {}
 
-    function isFunction(fn) {
-        return typeof fn === 'function';
-    }
-
-    function Promise() {
-        this._success = noop;
-    }
-    Promise.prototype.defer = function (err) {
-        if (err === null || err === undefined) {
-            this._success.apply(null, Array.prototype.slice.call(arguments, 1));
-        } else if (fail || this._error) {
-            return this._error ? this._error(err) : fail(err);
-        } else {
-            throw err;
-        }
-    };
-    Promise.prototype.defer._isDefer = true;
-    Promise.prototype.then = function (successHandler, errorHandler) {
-        var that = new Promise(),
-            defer = that.defer.bind(that);
-        this._success = isFunction(successHandler) ? successHandler.bind(null, successHandler._isDefer ? null : defer) : this._success;
-        this._error = isFunction(errorHandler) && (errorHandler._isDefer ? errorHandler : errorHandler.bind(null, defer));
-        return that;
-    };
-    Promise.prototype.fail = function (errorHandler) {
-        fail = isFunction(errorHandler) && errorHandler;
-    };
-
     function then(startFn) {
-        var that = new Promise(),
-            defer = that.defer.bind(that),
-            nextTick = typeof process === 'object' ? process.nextTick : setTimeout;
+        var fail = [],
+            Promise = noop,
+            nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
 
-        nextTick(isFunction(startFn) ? startFn.bind(null, defer) : defer);
-        return that;
+        function createHandler(promise, handler) {
+            return typeof handler === 'function' ? (handler._isDeferOfThen ? handler : handler.bind(null, promise.defer.bind(promise))) : null;
+        }
+
+        Promise.prototype.all = function (allHandler) {
+            var promise = new Promise();
+            this._all = createHandler(promise, allHandler);
+            return promise;
+        };
+        Promise.prototype.then = function (successHandler, errorHandler) {
+            var promise = new Promise();
+            this._success = createHandler(promise, successHandler) || noop;
+            this._error = createHandler(promise, errorHandler);
+            return promise;
+        };
+        Promise.prototype.fail = function (errorHandler) {
+            var promise = new Promise(),
+                handler = createHandler(promise, errorHandler);
+
+            if (handler) {
+                fail.push(handler);
+            }
+            return promise;
+        };
+        Promise.prototype.defer = function (err) {
+            if (this._all) {
+                this._all.apply(null, slice.call(arguments));
+            } else if (err === null || err === undefined) {
+                this._success.apply(null, slice.call(arguments, 1));
+            } else if (this._error || fail.length > 0) {
+                return this._error ? this._error(err) : fail.shift()(err);
+            } else {
+                throw err;
+            }
+        };
+        Promise.prototype.defer._isDeferOfThen = true;
+
+        var promise = new Promise(),
+            defer = promise.defer.bind(promise);
+
+        nextTick(typeof startFn === 'function' ? startFn.bind(null, defer) : defer);
+        return promise;
     }
 
     then.each = function (array, iterator, context) {
         var i = -1,
             end = array.length - 1;
+
         iterator = iterator || noop;
         next();
 
