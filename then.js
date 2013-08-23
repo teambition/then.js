@@ -2,7 +2,7 @@
 /*global module, process*/
 
 /*!
- * then.js, version 0.6.0, 2013/08/20
+ * then.js, version 0.6.1, 2013/08/23
  * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
@@ -21,8 +21,8 @@
 
         function createHandler(promise, handler) {
             var defer = promise.defer.bind(promise);
-            defer._this_then = promise;
-            return typeof handler === 'function' ? (handler._this_then ? handler : handler.bind(null, defer)) : null;
+            defer._next_then = promise;
+            return typeof handler === 'function' ? (handler._next_then ? handler : handler.bind(null, defer)) : null;
         }
 
         Promise.prototype.all = function (allHandler) {
@@ -49,9 +49,9 @@
         Promise.prototype.defer = function (err) {
             this._error = this._fail ? fail.shift() : this._error;
             if (this._all) {
-                this._all.apply(this._all._this_then || null, slice.call(arguments));
+                this._all.apply(this._all._next_then || null, slice.call(arguments));
             } else if (err === null || err === undefined) {
-                this._success.apply(this._success._this_then || null, slice.call(arguments, 1));
+                this._success.apply(this._success._next_then || null, slice.call(arguments, 1));
             } else if (this._error || fail.length > 0) {
                 return this._error ? this._error(err) : fail.shift()(err);
             } else {
@@ -62,7 +62,7 @@
         var promise = new Promise(),
             defer = promise.defer.bind(promise);
 
-        defer._this_then = promise;
+        defer._next_then = promise;
         nextTick(typeof startFn === 'function' ? startFn.bind(null, defer) : defer);
         return promise;
     }

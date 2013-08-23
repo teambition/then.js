@@ -25,7 +25,7 @@ then.js不同于其它promise，它没有`resolve`、也没有`reject`、更没�
 
 若要进入下一个then链，上面then中的successHandler、errorHandler还得进行如上类似封装，搞得挺复杂！
 
-then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触发器`defer`，无需封装，直接将异步任务写入then()!
+then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触发器`defer`，无需封装，直接将异步任务写入then()！因为`then`、`all`和`fail`都能自动生成下一个then对象，`reject`和`resolve`被合并为`defer`并注入任务函数，`reject`和`resolve`合并为`defer`的好处是，简化代码，还可以直接代替callback！
 
 ### then.js使用模式
 
@@ -133,7 +133,7 @@ then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触�
 #### promise模式：
 
 1. 入口函数then()：
-    
+
         var thenObj = then(function(defer) {
             // 执行同步或异步任务
             defer(err, result1, ...);
@@ -200,9 +200,9 @@ then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触�
 
 **Node.js:**
 
-    npm install then.js
+    npm install thenjs
 
-    var then = require('then.js');
+    var then = require('thenjs');
 
 **Browser:**
 
