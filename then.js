@@ -2,7 +2,7 @@
 /*global module, process*/
 
 /*!
- * then.js, version 0.6.1, 2013/08/23
+ * then.js, version 0.6.2, 2013/08/23
  * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
@@ -12,11 +12,9 @@
 (function () {
     var slice = Array.prototype.slice;
 
-    function noop() {}
-
     function then(startFn) {
         var fail = [],
-            Promise = noop,
+            Promise = function () {},
             nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
 
         function createHandler(promise, handler) {
@@ -32,7 +30,7 @@
         };
         Promise.prototype.then = function (successHandler, errorHandler) {
             var promise = new Promise();
-            this._success = createHandler(promise, successHandler) || noop;
+            this._success = createHandler(promise, successHandler);
             this._error = createHandler(promise, errorHandler);
             return promise;
         };
@@ -49,9 +47,9 @@
         Promise.prototype.defer = function (err) {
             this._error = this._fail ? fail.shift() : this._error;
             if (this._all) {
-                this._all.apply(this._all._next_then || null, slice.call(arguments));
+                return this._all.apply(this._all._next_then || null, slice.call(arguments));
             } else if (err === null || err === undefined) {
-                this._success.apply(this._success._next_then || null, slice.call(arguments, 1));
+                return this._success && this._success.apply(this._success._next_then || null, slice.call(arguments, 1));
             } else if (this._error || fail.length > 0) {
                 return this._error ? this._error(err) : fail.shift()(err);
             } else {
@@ -71,7 +69,7 @@
         var i = -1,
             end = array.length - 1;
 
-        iterator = iterator || noop;
+        iterator = iterator || function () {};
         next();
 
         function next() {
