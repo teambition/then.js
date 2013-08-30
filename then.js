@@ -2,7 +2,7 @@
 /*global module, process*/
 
 /*!
- * then.js, version 0.6.2, 2013/08/23
+ * then.js, version 0.6.3, 2013/08/30
  * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
@@ -10,9 +10,9 @@
  */
 
 (function () {
-    var slice = Array.prototype.slice;
+    var slice = [].slice;
 
-    function then(startFn) {
+    function thenjs(startFn) {
         var fail = [],
             Promise = function () {},
             nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
@@ -36,7 +36,6 @@
         };
         Promise.prototype.fail = function (errorHandler) {
             var promise = new Promise();
-
             this._fail = createHandler(promise, errorHandler);
             this._success = promise.defer.bind(promise, null);
             if (this._fail) {
@@ -50,7 +49,7 @@
                 return this._all.apply(this._all._next_then || null, slice.call(arguments));
             } else if (err === null || err === undefined) {
                 return this._success && this._success.apply(this._success._next_then || null, slice.call(arguments, 1));
-            } else if (this._error || fail.length > 0) {
+            } else if (this._error || fail.length) {
                 return this._error ? this._error(err) : fail.shift()(err);
             } else {
                 throw err;
@@ -59,29 +58,32 @@
 
         var promise = new Promise(),
             defer = promise.defer.bind(promise);
-
         defer._next_then = promise;
         nextTick(typeof startFn === 'function' ? startFn.bind(null, defer) : defer);
         return promise;
     }
 
-    then.each = function (array, iterator, context) {
-        var i = -1,
-            end = array.length - 1;
-
-        iterator = iterator || function () {};
-        next();
+    thenjs.each = function (array, iterator, context) {
+        var i = -1, end;
 
         function next() {
             i += 1;
             iterator.call(context, i < end ? next : null, array[i], i, array);
         }
+
+        iterator = iterator || function () {};
+        if (Array.isArray(array)) {
+            end = array.length - 1;
+            next();
+        } else {
+            throw new Error('First argument ' + array + ' is not a array!');
+        }
     };
 
     if (typeof module === 'object') {
-        module.exports = then;
+        module.exports = thenjs;
     } else if (typeof window === 'object') {
-        window.then = then;
+        window.then = thenjs;
     }
-    return then;
+    return thenjs;
 })();

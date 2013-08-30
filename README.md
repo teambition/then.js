@@ -208,35 +208,10 @@ then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触�
 
     <script src="/pathTo/then.js"></script>
 
-**注意：then.js需要bind方法支持，IE8及以下请先加载es5-shim.js**
+**注意：then.js需要bind方法和Array.isArray方法支持，IE8及以下请先加载es5-shim.js**
 
 
 ### Examples
 
-    then(function (defer) {
-        // start asnys task
-        // use defer as callback function
-        asnycTask1(param, defer);
-    }).
-    then(function (defer, value1, ...) {
-        // successHandler, value1, ... from asnycTask1
-        asnycTask2(value1, ..., defer);
-    }, function (defer, err) {
-        // errorHandler, err from asnycTask1
-        console.error(err);
-    }).
-    then(function (defer, value) {
-        // successHandler, value from asnycTask2
-        asnycTask3(value, defer);
-    }).
-    then(function (defer, value) {
-        // successHandler, value from asnycTask3
-        asnycTask4(value, defer);
-    }).
-    fail(function (defer, err) {
-        // global errorHandler, err from asnycTask2 or asnycTask3
-        console.error(err);
-    });
-
-**参见test.js**
+**参见demo——test.js**
 

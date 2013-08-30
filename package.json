@@ -4,7 +4,7 @@
   "author": {
     "name": "zensh"
   },
-  "version": "0.6.2",
+  "version": "0.6.3",
   "main": "then.js",
   "repository": {
     "type": "git",
