@@ -87,10 +87,39 @@ then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触�
         // ....
         defer(err, array);
     }).then(function (defer, array) {
-        then.each(array, function (next, value) {
-            // ....逐步执行同步或异步任务
-            return next ? next() : defer();
-        });
+        // ....并行执行任务
+        then.each(array, function (defer2, value) {
+            defer2();
+        }, defer);
+    }).then(function (defer, array) {
+        // ....逐步执行任务
+        then.eachSeries(array, function (defer2, value) {
+            defer2();
+        }, defer);
+    }).then(function (defer, array) {
+        // ....并行执行任务
+        then.parallel([function (defer2) {
+            //任务1
+            defer2();
+        }, function (defer2) {
+            //任务2
+            defer2();
+        }, function (defer2) {
+            //任务3
+            defer2();
+        }, ...], defer);
+    }).then(function (defer, array) {
+        // ....逐步执行任务
+        then.series([function (defer2) {
+            //任务1
+            defer2();
+        }, function (defer2) {
+            //任务2
+            defer2();
+        }, function (defer2) {
+            //任务3
+            defer2();
+        }, ...], defer);
     }).then(function (defer) {
         // ....
         defer(err, ...);
@@ -189,12 +218,13 @@ then.js只有`then`对象，它包括`then`、`all`和`fail`三个方法和触�
 
 #### async模式:
 
-    then.each(array, function (next, value, index, array) {
-        // 逐步执行同步或异步任务
-        asyncTask(value, function () {
-            return next ? next() : callback();
-        })
-    });
+    then.each(argsArray, iterator, callback, context);
+
+    then.eachSeries(argsArray, iterator, callback, context);
+
+    then.parallel(tasksArray, callback);
+
+    then.series(tasksArray, callback);
 
 ### Install
 

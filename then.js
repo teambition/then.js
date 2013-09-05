@@ -12,6 +12,30 @@
 (function () {
     var slice = [].slice;
 
+    function noop() {}
+
+    function wrapCallback(callback) {
+        if (typeof callback === 'function') {
+            return callback;
+        } else {
+            return function (err) {
+                throw err;
+            };
+        }
+    }
+
+    function isNull(obj) {
+        return obj === null || typeof obj === 'undefined';
+    }
+
+    function checkArray(array) {
+        if (Array.isArray(array)) {
+            return true;
+        } else {
+            throw new Error('First argument ' + array + ' is not a array!');
+        }
+    }
+
     function thenjs(startFn) {
         var fail = [],
             Promise = function () {},
@@ -46,9 +70,9 @@
         Promise.prototype.defer = function (err) {
             this._error = this._fail ? fail.shift() : this._error;
             if (this._all) {
-                return this._all.apply(this._all._next_then || null, slice.call(arguments));
-            } else if (err === null || err === undefined) {
-                return this._success && this._success.apply(this._success._next_then || null, slice.call(arguments, 1));
+                return this._all.apply(this._all._next_then, slice.call(arguments));
+            } else if (isNull(err)) {
+                return this._success && this._success.apply(this._success._next_then, slice.call(arguments, 1));
             } else if (this._error || fail.length) {
                 return this._error ? this._error(err) : fail.shift()(err);
             } else {
@@ -63,21 +87,101 @@
         return promise;
     }
 
-    thenjs.each = function (array, iterator, context) {
-        var i = -1,
-            end;
+    thenjs.each = function (array, iterator, callback, context) {
+        var i, end, total,
+            resultArray = [];
 
-        function next() {
-            i += 1;
-            iterator.call(context, i < end ? next : null, array[i], i, array);
+        function defer(index, err, result) {
+            total -= 1;
+            resultArray[index] = result;
+            if (!total || !isNull(err)) {
+                callback(err, resultArray);
+            }
         }
 
-        iterator = iterator || function () {};
-        if (Array.isArray(array)) {
-            end = array.length - 1;
-            next();
-        } else {
-            throw new Error('First argument ' + array + ' is not a array!');
+        callback = wrapCallback(callback);
+        if (checkArray(array)) {
+            total = end = array.length;
+            for (i = 0; i < end; i++) {
+                iterator.call(context, defer.bind(null, i), array[i], i, array);
+            }
+        }
+    };
+
+    thenjs.eachSeries = function (array, iterator, callback, context) {
+        var end, i = -1,
+            resultArray = [];
+
+        function defer(err, result) {
+            resultArray[i] = result;
+            i += 1;
+            if (i < end && isNull(err)) {
+                iterator.call(context, defer, array[i], i, array);
+            } else {
+                delete resultArray[-1];
+                callback(err, resultArray);
+            }
+        }
+
+        callback = wrapCallback(callback);
+        if (checkArray(array)) {
+            end = array.length;
+            defer();
+        }
+    };
+
+    thenjs.parallel = function (array, callback) {
+        var i, end, total,
+            resultArray = [];
+
+        function defer(index, err, result) {
+            total -= 1;
+            resultArray[index] = result;
+            if (!total || !isNull(err)) {
+                callback(err, resultArray);
+            }
+        }
+
+        callback = wrapCallback(callback);
+        if (checkArray(array)) {
+            total = end = array.length;
+            for (i = 0; i < end; i++) {
+                if (typeof array[i] === 'function') {
+                    array[i].call(null, defer.bind(null, i));
+                } else {
+                    total -= 1;
+                    resultArray[i] = array[i];
+                }
+            }
+            if (!total) {
+                callback(null, resultArray);
+            }
+        }
+    };
+
+    thenjs.series = function (array, callback) {
+        var end, i = -1,
+            resultArray = [];
+
+        function defer(err, result) {
+            resultArray[i] = result;
+            i += 1;
+            if (i < end && isNull(err)) {
+                if (typeof array[i] === 'function') {
+                    array[i].call(null, defer);
+                } else {
+                    defer(null, array[i]);
+                }
+            } else {
+                delete resultArray[-1];
+                callback(err, resultArray);
+            }
+        }
+
+        callback = wrapCallback(callback);
+        if (checkArray(array)) {
+            end = array.length;
+            defer();
         }
     };
 
