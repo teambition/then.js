@@ -1,8 +1,8 @@
 'use strict';
-/*global module, process*/
+/*global module, define, process*/
 
 /*!
- * then.js, version 0.6.3, 2013/08/30
+ * then.js, version 0.7.0, 2013/09/05
  * Another very small promise!
  * https://github.com/zensh/then.js
  * (c) admin@zensh.com 2013
@@ -64,7 +64,8 @@
     }
 
     thenjs.each = function (array, iterator, context) {
-        var i = -1, end;
+        var i = -1,
+            end;
 
         function next() {
             i += 1;
@@ -80,9 +81,14 @@
         }
     };
 
-    if (typeof module === 'object') {
+    if (typeof module !== 'undefined' && module.exports) {
         module.exports = thenjs;
-    } else if (typeof window === 'object') {
+    } else if (typeof define === 'function') {
+        define(function () {
+            return thenjs;
+        });
+    }
+    if (typeof window === 'object') {
         window.then = thenjs;
     }
     return thenjs;

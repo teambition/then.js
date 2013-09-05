@@ -1,4 +1,4 @@
-# then.js, version 0.6.3, 2013/08/30
+# then.js, version 0.7.0, 2013/09/05
 # Another very small promise!
 # https://github.com/zensh/then.js
 # (c) admin@zensh.com 2013
@@ -66,9 +66,10 @@ thenjs.each = (array, iterator, context) ->
   else
     throw new Error "First argument #{array} is not a array!"
 
-if typeof module is 'object'
+if typeof module isnt 'undefined' and module.exports
   module.exports = thenjs
-else if typeof window is 'object'
-  window.then = thenjs
+else if typeof define is 'function'
+  define(-> thenjs)
+window.then = thenjs if typeof window is 'object'
 
 return thenjs

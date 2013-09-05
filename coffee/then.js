@@ -94,9 +94,15 @@
     }
   };
 
-  if (typeof module === 'object') {
+  if (typeof module !== 'undefined' && module.exports) {
     module.exports = thenjs;
-  } else if (typeof window === 'object') {
+  } else if (typeof define === 'function') {
+    define(function() {
+      return thenjs;
+    });
+  }
+
+  if (typeof window === 'object') {
     window.then = thenjs;
   }
 
