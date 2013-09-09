@@ -3,7 +3,7 @@
 
 /*!
  * then.js, version 0.8.1, 2013/09/08
- * Another very small promise!
+ * Another very small asynchronous promise tool!
  * https://github.com/zensh/then.js
  * MIT license, admin@zensh.com
  */

@@ -1,6 +1,6 @@
 {
   "name": "thenjs",
-  "description": "Another very small promise!",
+  "description": "Another very small asynchronous promise tool!",
   "author": {
     "name": "zensh"
   },
