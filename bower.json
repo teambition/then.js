@@ -1,8 +1,8 @@
 {
   "name": "thenjs",
   "main": "then.js",
-  "version": "0.8.1",
-  "homepage": "https://github.com/zensh/then.js",
+  "version": "0.8.2",
+  "homepage": "https://github.com/teambition/then.js",
   "authors": [
     "Yan Qing <admin@zensh.com>"
   ],
