@@ -4,6 +4,8 @@ Another very small promise!
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
+**注意：从0.8.0开始修改了then.each参数，并增加了then.eachSeries, then.parallel, then.series。**
+
 then.js不同于其它promise，它没有`resolve`、也没有`reject`、更没有`promise`对象，所以你不再需要把异步任务封装成promise对象。
 
 一个典型的promise都要封装：
