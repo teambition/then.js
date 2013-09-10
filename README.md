@@ -11,7 +11,7 @@ Another very small asynchronous promise tool! (286 lines, 3.05KB min.js, 1.14KB 
 **Node.js:**
 
     npm install thenjs
-    
+
 **bower:**
 
     bower install thenjs
@@ -19,13 +19,13 @@ Another very small asynchronous promise tool! (286 lines, 3.05KB min.js, 1.14KB 
 **Browser:**
 
     <script src="/pathTo/then.js"></script>
-    
+
 **with require**
 
     var then = require('thenjs');
-    
+
 **with define**
-    
+
     define(['thenjs'], function (then) {
         //...
     });
@@ -37,8 +37,8 @@ Another very small asynchronous promise tool! (286 lines, 3.05KB min.js, 1.14KB 
 
 ### 主函数
 
-#### then([starthander])
-starthander是可选的，如果未提供，将直接进入下一个then object。
+#### then([starthandler])
+starthandler是可选的，如果未提供，将直接进入下一个then object。
 
 ***Parameters:***
 
