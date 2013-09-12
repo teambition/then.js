@@ -1,6 +1,6 @@
-then.js 0.9.0
+then.js 0.9.1
 ====
-Another very small asynchronous promise tool! (300 lines, 3.29KB min.js, 1.26KB gzipped)
+Another very small asynchronous promise tool! (300 lines, 3.3KB min.js, 1.25KB gzipped)
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
@@ -150,6 +150,8 @@ fail用于捕捉在它之前的then上上发生的任何err。若fail存在，fa
     defer的第一个参数永远是error，如果error存在，则error下一个then对象的Error收集器，如果Error收集器不存在，则抛出error。
 
     如果异步任务的callback的第一个参数为error，即callback(error, result1, ...)的形式，则可直接用defer代替异步任务的callback。Node.js中的异步函数基本都是这种形式，then.js用起来超方便。
+
+    **如果一个函数体内的同一个defer被多次调用，那么只有最先被触发的那个defer有效**。这个效果类似于`or`：多个异步任务同时进行，最先返回的结果进入下一个then链，其它后返回的结果忽略。
 
 3. 关于fail方法
 

@@ -2,7 +2,7 @@
 /*global module, define, process, console*/
 
 /*!
- * then.js, version 0.9.0, 2013/09/12
+ * then.js, version 0.9.1, 2013/09/12
  * Another very small asynchronous promise tool!
  * https://github.com/teambition/then.js
  * MIT license, admin@zensh.com
@@ -16,15 +16,12 @@
     function isNull(obj) {
         return obj === null || typeof obj === 'undefined';
     }
-
     function isFunction(fn) {
         return typeof fn === 'function';
     }
-
     function getError(obj, method, type) {
         return new Error('Argument ' + obj + ' in "' + method + '" function is not a ' + type + '!');
     }
-
     function each(defer, array, iterator, context) {
         var i, end, total, resultArray = [];
 
@@ -52,7 +49,6 @@
             }
         }
     }
-
     function eachSeries(defer, array, iterator, context) {
         var end, i = -1,
             resultArray = [];
@@ -82,7 +78,6 @@
             }
         }
     }
-
     function parallel(defer, array, context) {
         var i, end, total, resultArray = [];
 
@@ -112,7 +107,6 @@
             }
         }
     }
-
     function series(defer, array, context) {
         var end, i = -1,
             resultArray = [];
@@ -144,7 +138,6 @@
             }
         }
     }
-
     function tryNextTick(defer, fn) {
         nextTick(function () {
             try {
@@ -154,11 +147,9 @@
             }
         });
     }
-
     function createHandler(defer, handler) {
         return isFunction(handler) ? (handler._this_then ? handler : handler.bind(null, defer)) : null;
     }
-
     function closurePromise(debug) {
         var fail = [],
             chain = 0,
@@ -225,6 +216,7 @@
         prototype.defer = function (err) {
             chain += 1;
             this._error = this._fail ? fail.shift() : this._error;
+            this._success = this._success || this._each || this._eachSeries || this._parallel || this._series;
             if (this.debug) {
                 var args = slice.call(arguments);
                 args.unshift('Then chain ' + chain + ':');
@@ -241,25 +233,24 @@
                 } catch (error) {
                     err = error;
                 }
-            } else if (isNull(err)) {
-                this._success = this._success || this._each || this._eachSeries || this._parallel || this._series;
+            } else if (isNull(err) && this._success) {
                 try {
-                    return this._success && this._success.apply(this._success._this_then, slice.call(arguments, 1));
+                    this._success.apply(this._success._this_then, slice.call(arguments, 1));
                 } catch (error) {
                     err = error;
                 }
             }
             if (!isNull(err)) {
                 if (this._error || fail.length) {
-                    return this._error ? this._error(err) : fail.shift()(err);
+                    (this._error ? this._error : fail.shift())(err);
                 } else {
                     throw err;
                 }
             }
+            this._all = function () {};
         };
         return promiseFactory;
     }
-
     function eachAndSeriesFactory(fn) {
         return function (array, iterator, context, debug) {
             return closurePromise(debug)(function (defer) {
@@ -267,7 +258,6 @@
             });
         };
     }
-
     function parallelAndSeriesFactory(fn) {
         return function (array, context, debug) {
             return closurePromise(debug)(function (defer) {
@@ -275,7 +265,6 @@
             });
         };
     }
-
     function thenjs(startFn, context, debug) {
         return closurePromise(debug)(function (defer) {
             tryNextTick(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);

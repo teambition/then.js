@@ -1,4 +1,4 @@
-# then.js, version 0.9.0, 2013/09/12
+# then.js, version 0.9.1, 2013/09/12
 # Another very small asynchronous promise tool!
 # https://github.com/teambition/then.js
 # (c) admin@zensh.com 2013
@@ -169,6 +169,7 @@ closurePromise = (debug) ->
     defer: (err) ->
       chain += 1;
       @_error = if @_fail then fail.shift() else @_error
+      @_success = @_success or @_each or @_eachSeries or @_parallel or @_series
       if @debug
         args = slice.call(arguments)
         args.unshift("Then chain #{chain}:");
@@ -180,19 +181,17 @@ closurePromise = (debug) ->
         try
           @_all.apply(@_all._this_then, slice.call(arguments))
           err = null
-        catch error
-          err = error
-      else if not err?
-        @_success = @_success or @_each or @_eachSeries or @_parallel or @_series
+        catch err
+      else if not err? and @_success
         try
-          @_success.apply(@_success._this_then, slice.call(arguments, 1)) if @_success
-        catch error
-          err = error
+          @_success.apply(@_success._this_then, slice.call(arguments, 1))
+        catch err
       if err?
         if @_error or fail.length
           if @_error then @_error(err) else fail.shift()(err)
         else
           throw err
+      @_all = ->
 
   return promiseFactory
 

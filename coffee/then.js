@@ -240,9 +240,10 @@
       };
 
       Promise.prototype.defer = function(err) {
-        var args, error;
+        var args;
         chain += 1;
         this._error = this._fail ? fail.shift() : this._error;
+        this._success = this._success || this._each || this._eachSeries || this._parallel || this._series;
         if (this.debug) {
           args = slice.call(arguments);
           args.unshift("Then chain " + chain + ":");
@@ -257,31 +258,27 @@
             this._all.apply(this._all._this_then, slice.call(arguments));
             err = null;
           } catch (_error) {
-            error = _error;
-            err = error;
+            err = _error;
           }
-        } else if (err == null) {
-          this._success = this._success || this._each || this._eachSeries || this._parallel || this._series;
+        } else if ((err == null) && this._success) {
           try {
-            if (this._success) {
-              this._success.apply(this._success._this_then, slice.call(arguments, 1));
-            }
+            this._success.apply(this._success._this_then, slice.call(arguments, 1));
           } catch (_error) {
-            error = _error;
-            err = error;
+            err = _error;
           }
         }
         if (err != null) {
           if (this._error || fail.length) {
             if (this._error) {
-              return this._error(err);
+              this._error(err);
             } else {
-              return fail.shift()(err);
+              fail.shift()(err);
             }
           } else {
             throw err;
           }
         }
+        return this._all = function() {};
       };
 
       return Promise;
