@@ -1,8 +1,8 @@
 'use strict';
-/*global module, define, process*/
+/*global module, define, process, console*/
 
 /*!
- * then.js, version 0.8.2, 2013/09/08
+ * then.js, version 0.9.0, 2013/09/12
  * Another very small asynchronous promise tool!
  * https://github.com/teambition/then.js
  * MIT license, admin@zensh.com
@@ -145,8 +145,23 @@
         }
     }
 
-    function thenjs(startFn, context) {
+    function tryNextTick(defer, fn) {
+        nextTick(function () {
+            try {
+                fn();
+            } catch (error) {
+                defer(error);
+            }
+        });
+    }
+
+    function createHandler(defer, handler) {
+        return isFunction(handler) ? (handler._this_then ? handler : handler.bind(null, defer)) : null;
+    }
+
+    function closurePromise(debug) {
         var fail = [],
+            chain = 0,
             Promise = function () {},
             prototype = Promise.prototype;
 
@@ -158,36 +173,7 @@
             return promise;
         }
 
-        function tryNextTick(defer, fn) {
-            nextTick(function () {
-                try {
-                    fn();
-                } catch (error) {
-                    defer(error);
-                }
-            });
-        }
-
-        function eachAndSeriesFactory(fn) {
-            return function (array, iterator, context) {
-                return promiseFactory(function (defer) {
-                    tryNextTick(defer, fn.bind(null, defer, array, iterator, context));
-                });
-            };
-        }
-
-        function parallelAndSeriesFactory(fn) {
-            return function (array, context) {
-                return promiseFactory(function (defer) {
-                    tryNextTick(defer, fn.bind(null, defer, array, context));
-                });
-            };
-        }
-
-        function createHandler(defer, handler) {
-            return isFunction(handler) ? (handler._this_then ? handler : handler.bind(null, defer)) : null;
-        }
-
+        prototype.debug = debug;
         prototype.all = function (allHandler) {
             return promiseFactory(function (defer, self) {
                 self._all = createHandler(defer, allHandler);
@@ -237,7 +223,17 @@
             }, this);
         };
         prototype.defer = function (err) {
+            chain += 1;
             this._error = this._fail ? fail.shift() : this._error;
+            if (this.debug) {
+                var args = slice.call(arguments);
+                args.unshift('Then chain ' + chain + ':');
+                if (isFunction(this.debug)) {
+                    this.debug.apply(this.debug, args);
+                } else if (typeof console === 'object' && isFunction(console.log)) {
+                    console.log.apply(console, args);
+                }
+            }
             if (this._all) {
                 try {
                     this._all.apply(this._all._this_then, slice.call(arguments));
@@ -261,17 +257,35 @@
                 }
             }
         };
+        return promiseFactory;
+    }
 
-        thenjs.each = eachAndSeriesFactory(each);
-        thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
-        thenjs.parallel = parallelAndSeriesFactory(parallel);
-        thenjs.series = parallelAndSeriesFactory(series);
+    function eachAndSeriesFactory(fn) {
+        return function (array, iterator, context, debug) {
+            return closurePromise(debug)(function (defer) {
+                tryNextTick(defer, fn.bind(null, defer, array, iterator, context));
+            });
+        };
+    }
 
-        return promiseFactory(function (defer) {
+    function parallelAndSeriesFactory(fn) {
+        return function (array, context, debug) {
+            return closurePromise(debug)(function (defer) {
+                tryNextTick(defer, fn.bind(null, defer, array, context));
+            });
+        };
+    }
+
+    function thenjs(startFn, context, debug) {
+        return closurePromise(debug)(function (defer) {
             tryNextTick(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
         });
     }
 
+    thenjs.each = eachAndSeriesFactory(each);
+    thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
+    thenjs.parallel = parallelAndSeriesFactory(parallel);
+    thenjs.series = parallelAndSeriesFactory(series);
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = thenjs;
     } else if (typeof define === 'function') {

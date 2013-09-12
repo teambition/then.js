@@ -1,4 +1,4 @@
-# then.js, version 0.8.2, 2013/09/08
+# then.js, version 0.9.0, 2013/09/12
 # Another very small asynchronous promise tool!
 # https://github.com/teambition/then.js
 # (c) admin@zensh.com 2013
@@ -33,7 +33,6 @@ each = (defer, array, iterator, context) ->
       defer(null, resultArray)
     else
       iterator.call(context, next.bind(null, i), item, i, array) for item, i in array
-
 
 eachSeries = (defer, array, iterator, context) ->
   next = (err, result) ->
@@ -99,8 +98,21 @@ series = (defer, array, context) ->
   else
     defer(getError(array, 'series', 'array'))
 
-thenjs = (startFn, context) ->
+tryNextTick = (defer, fn) ->
+  nextTick(->
+    try
+      fn()
+    catch error
+      defer(error)
+  )
+
+createHandler = (defer, handler) ->
+  if isFunction(handler)
+    if handler._this_then then handler else handler.bind(null, defer)
+
+closurePromise = (debug) ->
   fail = []
+  chain = 0
 
   promiseFactory = (fn) ->
     promise = new Promise()
@@ -109,31 +121,9 @@ thenjs = (startFn, context) ->
     fn(defer)
     promise
 
-  tryNextTick = (defer, fn) ->
-    nextTick(->
-      try
-        fn()
-      catch error
-        defer(error)
-    )
-
-  eachAndSeriesFactory = (fn) ->
-    return (array, iterator, context) ->
-      promiseFactory((defer) ->
-        tryNextTick(defer, fn.bind(null, defer, array, iterator, context))
-      )
-
-  parallelAndSeriesFactory = (fn) ->
-    return (array, context) ->
-      promiseFactory((defer) ->
-        tryNextTick(defer, fn.bind(null, defer, array, context))
-      )
-
-  createHandler = (defer, handler) ->
-    if isFunction(handler)
-      if handler._this_then then handler else handler.bind(null, defer)
-
   class Promise
+    debug: debug
+
     all: (allHandler) ->
       promiseFactory((defer) =>
         @_all = createHandler(defer, allHandler)
@@ -177,7 +167,15 @@ thenjs = (startFn, context) ->
       )
 
     defer: (err) ->
+      chain += 1;
       @_error = if @_fail then fail.shift() else @_error
+      if @debug
+        args = slice.call(arguments)
+        args.unshift("Then chain #{chain}:");
+        if isFunction(@debug)
+            @debug.apply(@debug, args)
+        else if typeof console is 'object' and isFunction(console.log)
+            console.log.apply(console, args)
       if @_all
         try
           @_all.apply(@_all._this_then, slice.call(arguments))
@@ -196,16 +194,28 @@ thenjs = (startFn, context) ->
         else
           throw err
 
-  thenjs.each = eachAndSeriesFactory(each)
-  thenjs.eachSeries = eachAndSeriesFactory(eachSeries)
-  thenjs.parallel = parallelAndSeriesFactory(parallel)
-  thenjs.series = parallelAndSeriesFactory(series)
+  return promiseFactory
 
-  promiseFactory((defer) ->
+eachAndSeriesFactory = (fn) ->
+  return (array, iterator, context, debug) ->
+    closurePromise(debug)((defer) ->
+      tryNextTick(defer, fn.bind(null, defer, array, iterator, context))
+    )
+
+parallelAndSeriesFactory = (fn) ->
+  return (array, context, debug) ->
+    closurePromise(debug)((defer) ->
+      tryNextTick(defer, fn.bind(null, defer, array, context))
+    )
+thenjs = (startFn, context, debug) ->
+  closurePromise(debug)((defer) ->
     tryNextTick(defer, if isFunction(startFn) then startFn.bind(context, defer) else defer)
   )
 
-
+thenjs.each = eachAndSeriesFactory(each)
+thenjs.eachSeries = eachAndSeriesFactory(eachSeries)
+thenjs.parallel = parallelAndSeriesFactory(parallel)
+thenjs.series = parallelAndSeriesFactory(series)
 if typeof module isnt 'undefined' and module.exports
   module.exports = thenjs
 else if typeof define is 'function'
