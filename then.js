@@ -1,11 +1,11 @@
 'use strict';
 /*global module, define, process, console*/
 
-/*!
- * then.js, version 0.9.1, 2013/09/12
+/**
+ * then.js, version 0.9.2, 2013/09/22
  * Another very small asynchronous promise tool!
- * https://github.com/teambition/then.js
- * MIT license, admin@zensh.com
+ * https://github.com/teambition/then.js, admin@zensh.com
+ * License: MIT
  */
 
 (function () {
@@ -13,6 +13,7 @@
         isArray = Array.isArray,
         nextTick = typeof process === 'object' && isFunction(process.nextTick) ? process.nextTick : setTimeout;
 
+    function noop() {}
     function isNull(obj) {
         return obj === null || typeof obj === 'undefined';
     }
@@ -33,7 +34,7 @@
             }
         }
 
-        next._this_then = true;
+        next._next_then = {};
         if (!isArray(array)) {
             defer(getError(array, 'each', 'array'));
         } else if (!isFunction(iterator)) {
@@ -50,8 +51,7 @@
         }
     }
     function eachSeries(defer, array, iterator, context) {
-        var end, i = -1,
-            resultArray = [];
+        var end, i = -1, resultArray = [];
 
         function next(err, result) {
             resultArray[i] = result;
@@ -64,7 +64,7 @@
             }
         }
 
-        next._this_then = true;
+        next._next_then = {};
         if (!isArray(array)) {
             defer(getError(array, 'eachSeries', 'array'));
         } else if (!isFunction(iterator)) {
@@ -89,7 +89,7 @@
             }
         }
 
-        next._this_then = true;
+        next._next_then = {};
         if (!isArray(array)) {
             defer(getError(array, 'parallel', 'array'));
         } else {
@@ -126,7 +126,7 @@
             }
         }
 
-        next._this_then = true;
+        next._next_then = {};
         if (!isArray(array)) {
             defer(getError(array, 'series', 'array'));
         } else {
@@ -148,18 +148,17 @@
         });
     }
     function createHandler(defer, handler) {
-        return isFunction(handler) ? (handler._this_then ? handler : handler.bind(null, defer)) : null;
+        return isFunction(handler) ? (handler._next_then ? handler : handler.bind(null, defer)) : null;
     }
     function closurePromise(debug) {
-        var fail = [],
-            chain = 0,
+        var fail = [], chain = 0,
             Promise = function () {},
             prototype = Promise.prototype;
 
         function promiseFactory(fn, context) {
             var promise = new Promise(),
                 defer = promise.defer.bind(promise);
-            defer._this_then = promise;
+            defer._next_then = promise;
             fn(defer, context);
             return promise;
         }
@@ -216,38 +215,33 @@
         prototype.defer = function (err) {
             chain += 1;
             this._error = this._fail ? fail.shift() : this._error;
-            this._success = this._success || this._each || this._eachSeries || this._parallel || this._series;
-            if (this.debug) {
-                var args = slice.call(arguments);
-                args.unshift('Then chain ' + chain + ':');
-                if (isFunction(this.debug)) {
-                    this.debug.apply(this.debug, args);
-                } else if (typeof console === 'object' && isFunction(console.log)) {
-                    console.log.apply(console, args);
+            this._success = this._success || this._each || this._eachSeries || this._parallel || this._series || noop;
+            try {
+                if (this.debug) {
+                    var args = slice.call(arguments);
+                    args.unshift('Then chain ' + chain + ':');
+                    if (isFunction(this.debug)) {
+                        this.debug.apply(this.debug, args);
+                    } else if (typeof console === 'object' && isFunction(console.log)) {
+                        console.log.apply(console, args);
+                    }
                 }
-            }
-            if (this._all) {
-                try {
-                    this._all.apply(this._all._this_then, slice.call(arguments));
-                    err = null;
-                } catch (error) {
-                    err = error;
-                }
-            } else if (isNull(err) && this._success) {
-                try {
-                    this._success.apply(this._success._this_then, slice.call(arguments, 1));
-                } catch (error) {
-                    err = error;
-                }
-            }
-            if (!isNull(err)) {
-                if (this._error || fail.length) {
-                    (this._error ? this._error : fail.shift())(err);
+                if (this._all) {
+                    this._all.apply(this._all._next_then, slice.call(arguments));
+                } else if (isNull(err)) {
+                    this._success.apply(this._success._next_then, slice.call(arguments, 1));
                 } else {
                     throw err;
                 }
+            } catch (error) {
+                if (this._error || fail.length) {
+                    (this._error ? this._error : fail.shift())(error);
+                } else {
+                    throw error;
+                }
+            } finally {
+                this._all = noop;
             }
-            this._all = function () {};
         };
         return promiseFactory;
     }

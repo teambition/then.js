@@ -1,11 +1,11 @@
-# then.js, version 0.9.1, 2013/09/12
+# then.js, version 0.9.2, 2013/09/22
 # Another very small asynchronous promise tool!
-# https://github.com/teambition/then.js
-# (c) admin@zensh.com 2013
-# MIT license, admin@zensh.com
+# https://github.com/teambition/then.js, admin@zensh.com
+# License: MIT
 
 slice = [].slice
 isArray = Array.isArray
+noop = ->
 
 isFunction = (fn) ->
   typeof fn is 'function'
@@ -22,7 +22,7 @@ each = (defer, array, iterator, context) ->
     defer(err or null, resultArray) if total <= 0 or err?
 
   resultArray = []
-  next._this_then = true;
+  next._next_then = {}
   if not isArray(array)
     defer(getError(array, 'each', 'array'))
   else if not isFunction(iterator)
@@ -46,7 +46,7 @@ eachSeries = (defer, array, iterator, context) ->
 
   i = -1
   resultArray = []
-  next._this_then = true
+  next._next_then = {}
   if not isArray(array)
     defer(getError(array, 'eachSeries', 'array'))
   else if not isFunction(iterator)
@@ -62,7 +62,7 @@ parallel = (defer, array, context) ->
     defer(err or null, resultArray) if total <= 0 or err?
 
   resultArray = []
-  next._this_then = true
+  next._next_then = {}
   if not isArray(array)
     defer(getError(array, 'parallel', 'array'))
   else
@@ -91,7 +91,7 @@ series = (defer, array, context) ->
 
   i = -1
   resultArray = []
-  next._this_then = true
+  next._next_then = {}
   if isArray(array)
     end = array.length
     if end then next() else defer(null, resultArray)
@@ -108,7 +108,7 @@ tryNextTick = (defer, fn) ->
 
 createHandler = (defer, handler) ->
   if isFunction(handler)
-    if handler._this_then then handler else handler.bind(null, defer)
+    if handler._next_then then handler else handler.bind(null, defer)
 
 closurePromise = (debug) ->
   fail = []
@@ -117,7 +117,7 @@ closurePromise = (debug) ->
   promiseFactory = (fn) ->
     promise = new Promise()
     defer = promise.defer.bind(promise)
-    defer._this_then = promise
+    defer._next_then = promise
     fn(defer)
     promise
 
@@ -169,29 +169,27 @@ closurePromise = (debug) ->
     defer: (err) ->
       chain += 1;
       @_error = if @_fail then fail.shift() else @_error
-      @_success = @_success or @_each or @_eachSeries or @_parallel or @_series
-      if @debug
-        args = slice.call(arguments)
-        args.unshift("Then chain #{chain}:");
-        if isFunction(@debug)
-            @debug.apply(@debug, args)
-        else if typeof console is 'object' and isFunction(console.log)
-            console.log.apply(console, args)
-      if @_all
-        try
-          @_all.apply(@_all._this_then, slice.call(arguments))
-          err = null
-        catch err
-      else if not err? and @_success
-        try
-          @_success.apply(@_success._this_then, slice.call(arguments, 1))
-        catch err
-      if err?
+      @_success = @_success or @_each or @_eachSeries or @_parallel or @_series or noop
+      try
+        if @debug
+          args = slice.call(arguments)
+          args.unshift("Then chain #{chain}:");
+          if isFunction(@debug)
+              @debug.apply(@debug, args)
+          else if typeof console is 'object' and isFunction(console.log)
+              console.log.apply(console, args)
+        if @_all
+            @_all.apply(@_all._next_then, slice.call(arguments))
+        else if not err?
+            @_success.apply(@_success._next_then, slice.call(arguments, 1))
+        else throw err
+      catch error
         if @_error or fail.length
-          if @_error then @_error(err) else fail.shift()(err)
+          if @_error then @_error(error) else fail.shift()(error)
         else
-          throw err
-      @_all = ->
+          throw error
+      finally
+        @_all = noop
 
   return promiseFactory
 
