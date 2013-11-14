@@ -1,6 +1,6 @@
-then.js 0.9.2
+then.js 0.9.4[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
-Another very small asynchronous promise tool! (less than 300 lines, 3.x KB min.js, 1.x KB gzipped)
+Another very small asynchronous promise tool! (less than 300 lines)
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 

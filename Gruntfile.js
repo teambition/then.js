@@ -45,6 +45,10 @@ module.exports = function(grunt) {
           'coffee/then.js': 'coffee/then.coffee'
         }
       },
+    },
+
+    nodeunit: {
+      all: ['test/nodeunit_test.js']
     }
 
   });
@@ -55,7 +59,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-coffee');
+  grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
   // Default task.
-  grunt.registerTask('default', ['clean', 'jshint', 'uglify', 'coffee']);
+  grunt.registerTask('default', ['clean', 'jshint', 'uglify', 'coffee', 'nodeunit']);
+  grunt.registerTask('test', ['nodeunit']);
 };

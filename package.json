@@ -4,7 +4,7 @@
   "author": {
     "name": "zensh"
   },
-  "version": "0.9.3",
+  "version": "0.9.4",
   "main": "then.js",
   "repository": {
     "type": "git",
@@ -24,9 +24,10 @@
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-coffee": "~0.4.0",
     "grunt-contrib-jshint": "~0.6.0",
-    "grunt-contrib-uglify": "~0.2.2"
+    "grunt-contrib-uglify": "~0.2.2",
+    "grunt-contrib-nodeunit": "~0.2.2"
   },
   "scripts": {
-    "test": "node test/test.js"
+    "test": "grunt test"
   }
 }
