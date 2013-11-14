@@ -1,4 +1,4 @@
-# then.js, version 0.9.2, 2013/09/22
+# then.js, version 0.9.3, 2013/11/14
 # Another very small asynchronous promise tool!
 # https://github.com/teambition/then.js, admin@zensh.com
 # License: MIT
@@ -122,7 +122,8 @@ closurePromise = (debug) ->
     promise
 
   class Promise
-    debug: debug
+    debug: if not debug or isFunction(debug) then debug else typeof console is 'object' and isFunction(console.log) and
+      -> console.log.apply(console, arguments)
 
     all: (allHandler) ->
       promiseFactory((defer) =>
@@ -185,7 +186,7 @@ closurePromise = (debug) ->
         else throw err
       catch error
         if @_error or fail.length
-          if @_error then @_error(error) else fail.shift()(error)
+          (if @_error then @_error else fail.shift()).call(@, error)
         else
           throw error
       finally

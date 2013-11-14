@@ -2,7 +2,7 @@
 /*global module, define, process, console*/
 
 /**
- * then.js, version 0.9.2, 2013/09/22
+ * then.js, version 0.9.3, 2013/11/14
  * Another very small asynchronous promise tool!
  * https://github.com/teambition/then.js, admin@zensh.com
  * License: MIT
@@ -163,7 +163,10 @@
             return promise;
         }
 
-        prototype.debug = debug;
+        prototype.debug = !debug || isFunction(debug) ? debug :
+            typeof console === 'object' && isFunction(console.log) && function () {
+                console.log.apply(console, arguments);
+            };
         prototype.all = function (allHandler) {
             return promiseFactory(function (defer, self) {
                 self._all = createHandler(defer, allHandler);
@@ -219,12 +222,8 @@
             try {
                 if (this.debug) {
                     var args = slice.call(arguments);
-                    args.unshift('Then chain ' + chain + ':');
-                    if (isFunction(this.debug)) {
-                        this.debug.apply(this.debug, args);
-                    } else if (typeof console === 'object' && isFunction(console.log)) {
-                        console.log.apply(console, args);
-                    }
+                    args.unshift('\nResult of chain ' + chain + ':');
+                    this.debug.apply(this.debug, args);
                 }
                 if (this._all) {
                     this._all.apply(this._all._next_then, slice.call(arguments));
@@ -235,7 +234,7 @@
                 }
             } catch (error) {
                 if (this._error || fail.length) {
-                    (this._error ? this._error : fail.shift())(error);
+                    (this._error ? this._error : fail.shift()).call(this, error);
                 } else {
                     throw error;
                 }

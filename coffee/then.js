@@ -177,7 +177,9 @@
     Promise = (function() {
       function Promise() {}
 
-      Promise.prototype.debug = debug;
+      Promise.prototype.debug = !debug || isFunction(debug) ? debug : typeof console === 'object' && isFunction(console.log) && function() {
+        return console.log.apply(console, arguments);
+      };
 
       Promise.prototype.all = function(allHandler) {
         var _this = this;
@@ -266,11 +268,7 @@
         } catch (_error) {
           error = _error;
           if (this._error || fail.length) {
-            if (this._error) {
-              return this._error(error);
-            } else {
-              return fail.shift()(error);
-            }
+            return (this._error ? this._error : fail.shift()).call(this, error);
           } else {
             throw error;
           }
