@@ -2,51 +2,56 @@
 /*global module, define, process, console*/
 
 /**
- * then.js, version 0.9.3, 2013/11/14
+ * then.js, version 0.9.5, 2013/11/17
  * Another very small asynchronous promise tool!
  * https://github.com/teambition/then.js, admin@zensh.com
  * License: MIT
  */
 
 (function () {
-    var slice = [].slice,
+    var TRUTH = {},
+        slice = [].slice,
         isArray = Array.isArray,
-        nextTick = typeof process === 'object' && isFunction(process.nextTick) ? process.nextTick : setTimeout;
+        nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
 
-    function noop() {}
+    function NOOP() {}
     function isNull(obj) {
-        return obj === null || typeof obj === 'undefined';
+        return obj == null;
     }
     function isFunction(fn) {
         return typeof fn === 'function';
     }
     function getError(obj, method, type) {
-        return new Error('Argument ' + obj + ' in "' + method + '" function is not a ' + type + '!');
+        return new Error('Argument ' + obj.toString() + ' in "' + method + '" function is not a ' + type + '!');
     }
     function each(defer, array, iterator, context) {
         var i, end, total, resultArray = [];
 
         function next(index, err, result) {
             total -= 1;
-            resultArray[index] = result;
-            if (total <= 0 || !isNull(err)) {
-                defer(err || null, resultArray);
+            if (isNull(err)) {
+                resultArray[index] = result;
+                if (total <= 0) {
+                    return defer(null, resultArray);
+                }
+            } else {
+                return defer(err);
             }
         }
 
-        next._next_then = {};
+        next.nextThenObject = TRUTH;
         if (!isArray(array)) {
-            defer(getError(array, 'each', 'array'));
+            return defer(getError(array, 'each', 'array'));
         } else if (!isFunction(iterator)) {
-            defer(getError(iterator, 'each', 'function'));
+            return defer(getError(iterator, 'each', 'function'));
         } else {
             total = end = array.length;
-            if (!total) {
-                defer(null, resultArray);
-            } else {
+            if (total) {
                 for (i = 0; i < end; i++) {
                     iterator.call(context, next.bind(null, i), array[i], i, array);
                 }
+            } else {
+                return defer(null, resultArray);
             }
         }
     }
@@ -54,27 +59,31 @@
         var end, i = -1, resultArray = [];
 
         function next(err, result) {
-            resultArray[i] = result;
             i += 1;
-            if (i < end && isNull(err)) {
-                iterator.call(context, next, array[i], i, array);
+            if (isNull(err)) {
+                resultArray[i - 1] = result;
+                if (i < end) {
+                    return iterator.call(context, next, array[i], i, array);
+                } else {
+                    delete resultArray[-1];
+                    return defer(null, resultArray);
+                }
             } else {
-                delete resultArray[-1];
-                defer(err || null, resultArray);
+                return defer(err);
             }
         }
 
-        next._next_then = {};
+        next.nextThenObject = TRUTH;
         if (!isArray(array)) {
-            defer(getError(array, 'eachSeries', 'array'));
+            return defer(getError(array, 'eachSeries', 'array'));
         } else if (!isFunction(iterator)) {
-            defer(getError(iterator, 'eachSeries', 'function'));
+            return defer(getError(iterator, 'eachSeries', 'function'));
         } else {
             end = array.length;
-            if (!end) {
-                defer(null, resultArray);
+            if (end) {
+                return next();
             } else {
-                next();
+                return defer(null, resultArray);
             }
         }
     }
@@ -83,25 +92,29 @@
 
         function next(index, err, result) {
             total -= 1;
-            resultArray[index] = result;
-            if (total <= 0 || !isNull(err)) {
-                defer(err || null, resultArray);
+            if (isNull(err)) {
+                resultArray[index] = result;
+                if (total <= 0) {
+                    return defer(null, resultArray);
+                }
+            } else {
+                return defer(err);
             }
         }
 
-        next._next_then = {};
+        next.nextThenObject = TRUTH;
         if (!isArray(array)) {
-            defer(getError(array, 'parallel', 'array'));
+            return defer(getError(array, 'parallel', 'array'));
         } else {
             total = end = array.length;
             if (!total) {
-                defer(null, resultArray);
+                return defer(null, resultArray);
             } else {
                 for (i = 0; i < end; i++) {
                     if (isFunction(array[i])) {
                         array[i].call(context, next.bind(null, i), i);
                     } else {
-                        defer(getError(array[i], 'parallel', 'function'));
+                        return defer(getError(array[i], 'parallel', 'function'));
                     }
                 }
             }
@@ -112,29 +125,33 @@
             resultArray = [];
 
         function next(err, result) {
-            resultArray[i] = result;
             i += 1;
-            if (i < end && isNull(err)) {
-                if (isFunction(array[i])) {
-                    array[i].call(context, next, i);
+            if (isNull(err)) {
+                resultArray[i - 1] = result;
+                if (i < end) {
+                    if (isFunction(array[i])) {
+                        return array[i].call(context, next, i);
+                    } else {
+                        return defer(getError(array[i], 'series', 'function'));
+                    }
                 } else {
-                    defer(getError(array[i], 'series', 'function'));
+                    delete resultArray[-1];
+                    return defer(null, resultArray);
                 }
             } else {
-                delete resultArray[-1];
-                defer(err || null, resultArray);
+                return defer(err);
             }
         }
 
-        next._next_then = {};
+        next.nextThenObject = TRUTH;
         if (!isArray(array)) {
-            defer(getError(array, 'series', 'array'));
+            return defer(getError(array, 'series', 'array'));
         } else {
             end = array.length;
-            if (!end) {
-                defer(null, resultArray);
+            if (end) {
+                return next();
             } else {
-                next();
+                return defer(null, resultArray);
             }
         }
     }
@@ -148,7 +165,7 @@
         });
     }
     function createHandler(defer, handler) {
-        return isFunction(handler) ? (handler._next_then ? handler : handler.bind(null, defer)) : null;
+        return isFunction(handler) ? handler.nextThenObject ? handler : handler.bind(null, defer) : null;
     }
     function closurePromise(debug) {
         var fail = [], chain = 0,
@@ -158,13 +175,13 @@
         function promiseFactory(fn, context) {
             var promise = new Promise(),
                 defer = promise.defer.bind(promise);
-            defer._next_then = promise;
+            defer.nextThenObject = promise;
             fn(defer, context);
             return promise;
         }
 
         prototype.debug = !debug || isFunction(debug) ? debug :
-            typeof console === 'object' && isFunction(console.log) && function () {
+            typeof console === 'object' && console.log && function () {
                 console.log.apply(console, arguments);
             };
         prototype.all = function (allHandler) {
@@ -218,7 +235,7 @@
         prototype.defer = function (err) {
             chain += 1;
             this._error = this._fail ? fail.shift() : this._error;
-            this._success = this._success || this._each || this._eachSeries || this._parallel || this._series || noop;
+            this._success = this._success || this._each || this._eachSeries || this._parallel || this._series || NOOP;
             try {
                 if (this.debug) {
                     var args = slice.call(arguments);
@@ -226,20 +243,21 @@
                     this.debug.apply(this.debug, args);
                 }
                 if (this._all) {
-                    this._all.apply(this._all._next_then, slice.call(arguments));
+                    this._all.apply(this._all.nextThenObject, slice.call(arguments));
                 } else if (isNull(err)) {
-                    this._success.apply(this._success._next_then, slice.call(arguments, 1));
+                    this._success.apply(this._success.nextThenObject, slice.call(arguments, 1));
                 } else {
                     throw err;
                 }
             } catch (error) {
                 if (this._error || fail.length) {
-                    (this._error ? this._error : fail.shift()).call(this, error);
+                    this._error = this._error || fail.shift();
+                    this._error.call(this._error.nextThenObject, error);
                 } else {
                     throw error;
                 }
             } finally {
-                this._all = noop;
+                this._all = NOOP;
             }
         };
         return promiseFactory;

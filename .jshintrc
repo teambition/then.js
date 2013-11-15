@@ -1,14 +1,24 @@
 {
-    "strict": true,
-    "globalstrict": true,
-    "noarg": true,
-    "noempty": true,
-    "eqeqeq": true,
-    "undef": true,
-    "curly": true,
-    "devel": true,
-    "jquery": true,
-    "browser": true,
-    "wsh": true,
-    "evil": false
+  "camelcase": true,
+  "curly": true,
+  "eqeqeq":true,
+  "forin": false,
+  "immed": true,
+  "latedef": true,
+  "newcap": true,
+  "noarg": true,
+  "noempty": true,
+  "nonew": true,
+  "undef": true,
+  "unused": false,
+
+  "strict": true,
+  "globalstrict": true,
+  "trailing": true,
+  "eqnull": true,
+
+  "browser": true,
+  "devel": true,
+  "jquery": true,
+  "node": true
 }

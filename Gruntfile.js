@@ -12,17 +12,20 @@ module.exports = function(grunt) {
               '* then.js v<%= pkg.version %> by @zensh\n' +
               '*/\n',
     // Task configuration.
-    clean: ["then.min.js", "coffee/then.js"],
+    clean: ["then.min.js"],
 
     jshint: {
       options: {
         jshintrc: '.jshintrc'
       },
-      gruntfile: {
+      then: {
+        src: 'then.js'
+      },
+      Gruntfile: {
         src: 'Gruntfile.js'
       },
-      src: {
-        src: ['then.js']
+      testjs: {
+        src: 'test/*.js'
       }
     },
 
@@ -36,17 +39,6 @@ module.exports = function(grunt) {
       }
     },
 
-    coffee: {
-      thenjs: {
-        options: {
-          bare: false
-        },
-        files: {
-          'coffee/then.js': 'coffee/then.coffee'
-        }
-      },
-    },
-
     nodeunit: {
       all: ['test/nodeunit_test.js']
     }
@@ -58,10 +50,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-uglify');
-  grunt.loadNpmTasks('grunt-contrib-coffee');
   grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
   // Default task.
-  grunt.registerTask('default', ['clean', 'jshint', 'uglify', 'coffee', 'nodeunit']);
+  grunt.registerTask('default', ['clean', 'jshint', 'uglify', 'nodeunit']);
   grunt.registerTask('test', ['nodeunit']);
 };
