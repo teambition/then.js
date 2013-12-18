@@ -2,7 +2,7 @@
 /*global module, define, process, console*/
 
 /**
- * then.js, version 0.9.5, 2013/11/17
+ * then.js, version 0.9.6, 2013/12/18
  * Another very small asynchronous promise tool!
  * https://github.com/teambition/then.js, admin@zensh.com
  * License: MIT
