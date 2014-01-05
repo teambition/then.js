@@ -9,8 +9,9 @@ module.exports = function(grunt) {
     // Metadata.
     pkg: grunt.file.readJSON('package.json'),
     banner: '/**\n' +
-              '* then.js v<%= pkg.version %> by @zensh\n' +
-              '*/\n',
+            ' * <%= pkg.name %>: v<%= pkg.version %>\n' +
+            ' * <%= pkg.homepage %>\n' +
+            ' */\n',
     // Task configuration.
     clean: ["then.min.js"],
 
@@ -55,4 +56,5 @@ module.exports = function(grunt) {
   // Default task.
   grunt.registerTask('default', ['jshint', 'nodeunit', 'clean', 'uglify']);
   grunt.registerTask('test', ['jshint', 'nodeunit']);
+  grunt.registerTask('build', ['jshint', 'clean', 'uglify']);
 };

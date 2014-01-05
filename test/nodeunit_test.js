@@ -1,7 +1,7 @@
 'use strict';
 /*global module, process*/
 
-var thenJs = require('../then.min.js');
+var thenJs = require('../then.js');
 
 function getArray(length) {
     // 生成有序数组
