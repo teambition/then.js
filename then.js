@@ -24,7 +24,7 @@
     return new Error('Argument ' + obj.toString() + ' in "' + method + '" function is not a ' + type + '!');
   }
   function each(defer, array, iterator, context) {
-    var i, end, total, resultArray = [];
+    var i, end, total, _defer, resultArray = [];
 
     function next(index, err, result) {
       total -= 1;
@@ -38,7 +38,6 @@
       }
     }
 
-    next.nextThenObject = TRUTH;
     if (!isArray(array)) {
       return defer(getError(array, 'each', 'array'));
     } else if (!isFunction(iterator)) {
@@ -47,7 +46,9 @@
       total = end = array.length;
       if (total) {
         for (i = 0; i < end; i++) {
-          iterator.call(context, next.bind(null, i), array[i], i, array);
+          _defer = next.bind(null, i);
+          _defer.nextThenObject = TRUTH;
+          iterator.call(context, _defer, array[i], i, array);
         }
       } else {
         return defer(null, resultArray);
@@ -87,7 +88,7 @@
     }
   }
   function parallel(defer, array, context) {
-    var i, end, total, resultArray = [];
+    var i, end, total, _defer, resultArray = [];
 
     function next(index, err, result) {
       total -= 1;
@@ -101,7 +102,6 @@
       }
     }
 
-    next.nextThenObject = TRUTH;
     if (!isArray(array)) {
       return defer(getError(array, 'parallel', 'array'));
     } else {
@@ -111,7 +111,9 @@
       } else {
         for (i = 0; i < end; i++) {
           if (isFunction(array[i])) {
-            array[i].call(context, next.bind(null, i), i);
+            _defer = next.bind(null, i);
+            _defer.nextThenObject = TRUTH;
+            array[i].call(context, _defer, i);
           } else {
             return defer(getError(array[i], 'parallel', 'function'));
           }
