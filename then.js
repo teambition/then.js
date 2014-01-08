@@ -8,21 +8,25 @@
  */
 
 (function () {
-  var TRUTH = {},
+  var emptyThen = {},
     slice = [].slice,
     isArray = Array.isArray,
     nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
 
   function NOOP() {}
+
   function isNull(obj) {
     return obj == null;
   }
+
   function isFunction(fn) {
     return typeof fn === 'function';
   }
-  function getError(obj, method, type) {
-    return new Error('Argument ' + obj.toString() + ' in "' + method + '" function is not a ' + type + '!');
+
+  function errorify(obj, method, type) {
+    return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" function is not a ' + type + '!');
   }
+
   function each(defer, array, iterator, context) {
     var i, end, total, _defer, resultArray = [];
 
@@ -39,15 +43,15 @@
     }
 
     if (!isArray(array)) {
-      return defer(getError(array, 'each', 'array'));
+      return defer(errorify(array, 'each', 'array'));
     } else if (!isFunction(iterator)) {
-      return defer(getError(iterator, 'each', 'function'));
+      return defer(errorify(iterator, 'each', 'function'));
     } else {
       total = end = array.length;
       if (total) {
         for (i = 0; i < end; i++) {
           _defer = next.bind(null, i);
-          _defer.nextThenObject = TRUTH;
+          _defer.nextThenObject = emptyThen;
           iterator.call(context, _defer, array[i], i, array);
         }
       } else {
@@ -55,6 +59,7 @@
       }
     }
   }
+
   function eachSeries(defer, array, iterator, context) {
     var end, i = -1, resultArray = [];
 
@@ -73,20 +78,21 @@
       }
     }
 
-    next.nextThenObject = TRUTH;
     if (!isArray(array)) {
-      return defer(getError(array, 'eachSeries', 'array'));
+      return defer(errorify(array, 'eachSeries', 'array'));
     } else if (!isFunction(iterator)) {
-      return defer(getError(iterator, 'eachSeries', 'function'));
+      return defer(errorify(iterator, 'eachSeries', 'function'));
     } else {
       end = array.length;
       if (end) {
+        next.nextThenObject = emptyThen;
         return next();
       } else {
         return defer(null, resultArray);
       }
     }
   }
+
   function parallel(defer, array, context) {
     var i, end, total, _defer, resultArray = [];
 
@@ -103,7 +109,7 @@
     }
 
     if (!isArray(array)) {
-      return defer(getError(array, 'parallel', 'array'));
+      return defer(errorify(array, 'parallel', 'array'));
     } else {
       total = end = array.length;
       if (!total) {
@@ -112,15 +118,16 @@
         for (i = 0; i < end; i++) {
           if (isFunction(array[i])) {
             _defer = next.bind(null, i);
-            _defer.nextThenObject = TRUTH;
+            _defer.nextThenObject = emptyThen;
             array[i].call(context, _defer, i);
           } else {
-            return defer(getError(array[i], 'parallel', 'function'));
+            return defer(errorify(array[i], 'parallel', 'function'));
           }
         }
       }
     }
   }
+
   function series(defer, array, context) {
     var end, i = -1,
       resultArray = [];
@@ -133,7 +140,7 @@
           if (isFunction(array[i])) {
             return array[i].call(context, next, i);
           } else {
-            return defer(getError(array[i], 'series', 'function'));
+            return defer(errorify(array[i], 'series', 'function'));
           }
         } else {
           delete resultArray[-1];
@@ -144,18 +151,19 @@
       }
     }
 
-    next.nextThenObject = TRUTH;
     if (!isArray(array)) {
-      return defer(getError(array, 'series', 'array'));
+      return defer(errorify(array, 'series', 'array'));
     } else {
       end = array.length;
       if (end) {
+        next.nextThenObject = emptyThen;
         return next();
       } else {
         return defer(null, resultArray);
       }
     }
   }
+
   function tryNextTick(defer, fn) {
     nextTick(function () {
       try {
@@ -165,9 +173,11 @@
       }
     });
   }
+
   function createHandler(defer, handler) {
     return isFunction(handler) ? handler.nextThenObject ? handler : handler.bind(null, defer) : null;
   }
+
   function closurePromise(debug) {
     var fail = [], chain = 0,
       Promise = function () {},
@@ -272,6 +282,7 @@
     };
     return promiseFactory;
   }
+
   function eachAndSeriesFactory(fn) {
     return function (array, iterator, context, debug) {
       return closurePromise(debug)(function (defer) {
@@ -279,6 +290,7 @@
       });
     };
   }
+
   function parallelAndSeriesFactory(fn) {
     return function (array, context, debug) {
       return closurePromise(debug)(function (defer) {
@@ -286,6 +298,7 @@
       });
     };
   }
+
   function thenjs(startFn, context, debug) {
     return closurePromise(debug)(function (defer) {
       tryNextTick(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
@@ -304,5 +317,4 @@
   if (typeof window === 'object') {
     window.then = thenjs;
   }
-  return thenjs;
 })();
