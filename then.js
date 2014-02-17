@@ -264,6 +264,7 @@
         }
       }
       function dealError(error) {
+        error.stack = error.stack || error.description;
         if (_this._error || fail.length) {
           _this._error = _this._error || fail.shift();
           _this._error.call(_this._error.nextThenObject, error);
