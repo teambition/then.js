@@ -19,7 +19,7 @@ function asnycTask() {
         result = [].slice.call(arguments, 0, -1);
     setTimeout(function () {
         callback.apply(callback.nextThenObject, result);
-    }, Math.random() * 20);
+    }, 0);
 }
 
 function testThen(test, then, num) {
@@ -86,17 +86,22 @@ function testThen(test, then, num) {
 
 exports.testThen = function (test) {
     var list = getArray(100);
-    thenJs.each(list, function (defer, value) {
+    var test1 = thenJs.each(list, function (defer, value) {
         testThen(test, thenJs, value).all(function (defer2, error, result) {
             defer(error, result);
         });
-    }).eachSeries(null, function (defer, value) {
+    });
+    var test2 = test1.eachSeries(null, function (defer, value) {
         testThen(test, thenJs, value).all(defer);
-    }).then(function (defer, result) {
+    });
+    var test3 = test2.then(function (defer, result) {
         test.deepEqual(result, list, 'Test each and eachSeries');
         defer(list);
-    }).fail(function (defer, err) {
-        test.strictEqual(err, list, 'None error');
-        test.done();
     });
+    setTimeout(function () {
+        test3.fail(function (defer, err) {
+            test.strictEqual(err, list, 'None error');
+            test.done();
+        });
+    }, 25000);
 };

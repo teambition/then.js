@@ -23,10 +23,10 @@ function eachThen() {
   });
 }
 
-suite.add('Async#each', function () {
-  eachAsync();
-}).add('Thenjs#each', function () {
+suite.add('Thenjs#each', function () {
   eachThen();
+}).add('Async#each', function () {
+  eachAsync();
 }).on('cycle', function (e) {
   console.log(String(e.target));
 }).on('complete', function () {

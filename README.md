@@ -9,7 +9,9 @@ Another very small asynchronous promise tool!
 1. 无需像Q.js那样封装，可以用自然的方式直接把N多异步回调函数写成一个长长的then链；
 2. 拥有类似Async.js但更强大的each、eachSeries、parallel、series批量异步组合函数，它们都可在then链上调用；
 3. Error收集器fail方法可在任意位置调用，可以调用一次或多次，让你随心所欲处理各种Error。还可以把fail放在末尾当作殿后函数运行（即不管then链成功或失败均运行该函数）；
-4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则console.log）
+4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则console.log）;
+5. 全局错误处理onerror;
+6. then链续接，当一条then链的所有任务运行完毕之后，还可以在其后继续追加then链，前面运行的结果能进入续接的then链继续处理。
 
 ## Install
 
@@ -53,6 +55,8 @@ Another very small asynchronous promise tool!
 + then.parallel(taskFnArray, [context], [debug])
 
 + then.series(taskFnArray, [context], [debug])
+
++ then.onerror(errorHandler)
 
 ####then对象方法：（return then对象）
 

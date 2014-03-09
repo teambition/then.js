@@ -191,6 +191,12 @@
       return promise;
     }
 
+    function checkDelayExecute(context) {
+      if (context._result) {  // then链上有未处理结果，表明处理函数是后来加上，直接处理
+        context.defer.apply(context, context._result);
+      }
+    }
+
     prototype.debug = !debug || isFunction(debug) ? debug :
       typeof console === 'object' && console.log && function () {
         console.log.apply(console, arguments);
@@ -198,12 +204,14 @@
     prototype.all = function (allHandler) {
       return promiseFactory(function (defer, self) {
         self._all = createHandler(defer, allHandler);
+        checkDelayExecute(self);
       }, this);
     };
     prototype.then = function (successHandler, errorHandler) {
       return promiseFactory(function (defer, self) {
         self._success = createHandler(defer, successHandler);
         self._error = createHandler(defer, errorHandler);
+        checkDelayExecute(self);
       }, this);
     };
     prototype.fail = function (errorHandler) {
@@ -213,6 +221,7 @@
         if (self._fail) {
           fail.push(self._fail);
         }
+        checkDelayExecute(self);
       }, this);
     };
     prototype.each = function (array, iterator, context) {
@@ -220,6 +229,7 @@
         self._each = function (dArray, dIterator, dContext) {
           each(defer, array || dArray, iterator || dIterator, context || dContext);
         };
+        checkDelayExecute(self);
       }, this);
     };
     prototype.eachSeries = function (array, iterator, context) {
@@ -227,6 +237,7 @@
         self._eachSeries = function (dArray, dIterator, dContext) {
           eachSeries(defer, array || dArray, iterator || dIterator, context || dContext);
         };
+        checkDelayExecute(self);
       }, this);
     };
     prototype.parallel = function (array, context) {
@@ -234,6 +245,7 @@
         self._parallel = function (dArray, dContext) {
           parallel(defer, array || dArray, context || dContext);
         };
+        checkDelayExecute(self);
       }, this);
     };
     prototype.series = function (array, context) {
@@ -241,13 +253,20 @@
         self._series = function (dArray, dContext) {
           series(defer, array || dArray, context || dContext);
         };
+        checkDelayExecute(self);
       }, this);
     };
     prototype.defer = function (err) {
       var _this = this, _arguments = arguments;
-      chain += 1;
+
+      if (_this._result === false) {
+        return;  // then链上的结果已经处理，若重复执行defer则直接跳过；
+      }
+
       _this._error = _this._fail ? fail.shift() : _this._error;
-      _this._success = _this._success || _this._each || _this._eachSeries || _this._parallel || _this._series || NOOP;
+      _this._success = _this._success || _this._each || _this._eachSeries || _this._parallel || _this._series || function () {
+        _this._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
+      };
 
       function execute() {
         if (_this.debug) {
@@ -268,8 +287,10 @@
         if (_this._error || fail.length) {
           _this._error = _this._error || fail.shift();
           _this._error.call(_this._error.nextThenObject, error);
+        } else if (thenjs.onerror) {
+          thenjs.onerror(error);
         } else {
-          throw error;
+          _this._result = _arguments;  //then链上没有错误结果处理函数，在then链上保存结果。
         }
       }
 
@@ -278,7 +299,10 @@
       } catch (error) {
         dealError(error);
       } finally {
-        _this._all = NOOP;
+        if (!_this._result) {
+          chain += 1;
+          _this._result = false;  //标记结果已处理
+        }
       }
     };
     return promiseFactory;
@@ -310,12 +334,12 @@
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
   thenjs.parallel = parallelAndSeriesFactory(parallel);
   thenjs.series = parallelAndSeriesFactory(series);
-  if (typeof module !== 'undefined' && module.exports) {
+
+  if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
-  } else if (typeof define === 'function') {
-    define(function () {return thenjs;});
-  }
-  if (typeof window === 'object') {
+  } else if (typeof define === 'function' && define.amd) {
+    define([], function () {return thenjs;});
+  } else if (typeof window === 'object') {
     window.then = thenjs;
   }
 })();
