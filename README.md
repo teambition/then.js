@@ -331,8 +331,8 @@ fail用于捕捉在它之前的then链上发生的任何err。若fail存在，fa
 
 ### Who Used
 
- + AngularJS中文社区：[http://angularjs.cn/]()
- + Teambition：[http://teambition.com/]()
+ + AngularJS中文社区：<http://angularjs.cn/>
+ + Teambition：<http://teambition.com/>
 
 
 ## Examples
