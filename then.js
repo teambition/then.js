@@ -10,10 +10,18 @@
 (function () {
   var emptyThen = {},
     slice = [].slice,
-    isArray = Array.isArray,
-    nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout;
+    isArray = Array.isArray || function (obj) {
+      return Object.prototype.toString.call(obj) === '[object Array]';
+    };
 
-  function NOOP() {}
+  if (!Function.prototype.bind) {
+    Function.prototype.bind = function (context) {
+      var self = this, args = slice.call(arguments, 1);
+      return function () {
+        return self.apply(context, args.concat(slice.call(arguments)));
+      };
+    };
+  }
 
   function isNull(obj) {
     return obj == null;
@@ -164,14 +172,12 @@
     }
   }
 
-  function tryNextTick(defer, fn) {
-    nextTick(function () {
-      try {
-        fn();
-      } catch (error) {
-        defer(error);
-      }
-    });
+  function tryTask(defer, fn) {
+    try {
+      fn();
+    } catch (error) {
+      defer(error);
+    }
   }
 
   function createHandler(defer, handler) {
@@ -311,7 +317,7 @@
   function eachAndSeriesFactory(fn) {
     return function (array, iterator, context, debug) {
       return closurePromise(debug)(function (defer) {
-        tryNextTick(defer, fn.bind(null, defer, array, iterator, context));
+        tryTask(defer, fn.bind(null, defer, array, iterator, context));
       });
     };
   }
@@ -319,14 +325,14 @@
   function parallelAndSeriesFactory(fn) {
     return function (array, context, debug) {
       return closurePromise(debug)(function (defer) {
-        tryNextTick(defer, fn.bind(null, defer, array, context));
+        tryTask(defer, fn.bind(null, defer, array, context));
       });
     };
   }
 
   function thenjs(startFn, context, debug) {
     return closurePromise(debug)(function (defer) {
-      tryNextTick(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
+      tryTask(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
     });
   }
 
@@ -338,7 +344,7 @@
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
   } else if (typeof define === 'function' && define.amd) {
-    define([], function () {return thenjs;});
+    define('then', [], function () {return thenjs;});
   } else if (typeof window === 'object') {
     window.then = thenjs;
   }

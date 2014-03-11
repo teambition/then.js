@@ -1,8 +1,10 @@
-then.js 0.10.1[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 0.10.2[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 Another very small asynchronous promise tool!
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
+
+**你可以在服务器端（node.js）或浏览器中使用then.js，兼容ie6/7/8。**
 
 ## 特征
 
@@ -12,6 +14,15 @@ Another very small asynchronous promise tool!
 4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则console.log）;
 5. 全局错误处理onerror;
 6. then链续接，当一条then链的所有任务运行完毕之后，还可以在其后继续追加then链，前面运行的结果能进入续接的then链继续处理。
+
+##Benchmark
+each、eachSeries、parallel、series长度100各跑一次`node test/benchmark.js`：
+
+**then.js:** 0.32 ops/sec ±0.59% (6 runs sampled)
+
+**async:** 0.32 ops/sec ±0.30% (6 runs sampled)
+
+测分基本一致，但then.js可以链式调用（参考benchmark.js代码）！
 
 ## Install
 
@@ -36,9 +47,6 @@ Another very small asynchronous promise tool!
     define(['thenjs'], function (then) {
         //...
     });
-
-**注意：then.js需要bind方法和Array.isArray方法支持，IE8及以下请先加载es5-shim.js**
-
 
 ## API
 
