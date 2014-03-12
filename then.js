@@ -344,7 +344,7 @@
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
   } else if (typeof define === 'function' && define.amd) {
-    define('then', [], function () {return thenjs;});
+    define([], function () {return thenjs;});
   } else if (typeof window === 'object') {
     window.then = thenjs;
   }
