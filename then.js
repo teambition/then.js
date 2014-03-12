@@ -180,7 +180,7 @@
     }
   }
 
-  function createHandler(defer, handler) {
+  function wrapTaskHandler(defer, handler) {
     return isFunction(handler) ? handler.nextThenObject ? handler : handler.bind(null, defer) : null;
   }
 
@@ -197,8 +197,8 @@
       return promise;
     }
 
-    function checkDelayExecute(context) {
-      if (context._result) {  // then链上有未处理结果，表明处理函数是后来加上，直接处理
+    function checkDefer(context) {
+      if (context._result) {  // then链上有未处理结果，任务已完成，直接defer进入下一链
         context.defer.apply(context, context._result);
       }
     }
@@ -209,25 +209,25 @@
       };
     prototype.all = function (allHandler) {
       return promiseFactory(function (defer, self) {
-        self._all = createHandler(defer, allHandler);
-        checkDelayExecute(self);
+        self._all = wrapTaskHandler(defer, allHandler);
+        checkDefer(self);
       }, this);
     };
     prototype.then = function (successHandler, errorHandler) {
       return promiseFactory(function (defer, self) {
-        self._success = createHandler(defer, successHandler);
-        self._error = createHandler(defer, errorHandler);
-        checkDelayExecute(self);
+        self._success = wrapTaskHandler(defer, successHandler);
+        self._error = wrapTaskHandler(defer, errorHandler);
+        checkDefer(self);
       }, this);
     };
     prototype.fail = function (errorHandler) {
       return promiseFactory(function (defer, self) {
-        self._fail = createHandler(defer, errorHandler);
+        self._fail = wrapTaskHandler(defer, errorHandler);
         self._success = defer.bind(defer, null);
         if (self._fail) {
           fail.push(self._fail);
         }
-        checkDelayExecute(self);
+        checkDefer(self);
       }, this);
     };
     prototype.each = function (array, iterator, context) {
@@ -235,7 +235,7 @@
         self._each = function (dArray, dIterator, dContext) {
           each(defer, array || dArray, iterator || dIterator, context || dContext);
         };
-        checkDelayExecute(self);
+        checkDefer(self);
       }, this);
     };
     prototype.eachSeries = function (array, iterator, context) {
@@ -243,7 +243,7 @@
         self._eachSeries = function (dArray, dIterator, dContext) {
           eachSeries(defer, array || dArray, iterator || dIterator, context || dContext);
         };
-        checkDelayExecute(self);
+        checkDefer(self);
       }, this);
     };
     prototype.parallel = function (array, context) {
@@ -251,7 +251,7 @@
         self._parallel = function (dArray, dContext) {
           parallel(defer, array || dArray, context || dContext);
         };
-        checkDelayExecute(self);
+        checkDefer(self);
       }, this);
     };
     prototype.series = function (array, context) {
@@ -259,44 +259,44 @@
         self._series = function (dArray, dContext) {
           series(defer, array || dArray, context || dContext);
         };
-        checkDelayExecute(self);
+        checkDefer(self);
       }, this);
     };
     prototype.defer = function (err) {
-      var _this = this, _arguments = arguments;
+      var self = this, _arguments = arguments;
 
-      if (_this._result === false) {
+      if (self._result === false) {
         return;  // then链上的结果已经处理，若重复执行defer则直接跳过；
       }
 
-      _this._error = _this._fail ? fail.shift() : _this._error;
-      _this._success = _this._success || _this._each || _this._eachSeries || _this._parallel || _this._series || function () {
-        _this._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
+      self._error = self._fail ? fail.shift() : self._error;
+      self._success = self._success || self._each || self._eachSeries || self._parallel || self._series || function () {
+        self._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
       };
 
       function execute() {
-        if (_this.debug) {
+        if (self.debug) {
           var args = slice.call(_arguments);
           args.unshift('\nResult of chain ' + chain + ':');
-          _this.debug.apply(_this.debug, args);
+          self.debug.apply(self.debug, args);
         }
-        if (_this._all) {
-          _this._all.apply(_this._all.nextThenObject, slice.call(_arguments));
+        if (self._all) {
+          self._all.apply(self._all.nextThenObject, slice.call(_arguments));
         } else if (isNull(err)) {
-          _this._success.apply(_this._success.nextThenObject, slice.call(_arguments, 1));
+          self._success.apply(self._success.nextThenObject, slice.call(_arguments, 1));
         } else {
           throw err;
         }
       }
       function dealError(error) {
         error.stack = error.stack || error.description;
-        if (_this._error || fail.length) {
-          _this._error = _this._error || fail.shift();
-          _this._error.call(_this._error.nextThenObject, error);
+        if (self._error || fail.length) {
+          self._error = self._error || fail.shift();
+          self._error.call(self._error.nextThenObject, error);
         } else if (thenjs.onerror) {
           thenjs.onerror(error);
         } else {
-          _this._result = _arguments;  //then链上没有错误结果处理函数，在then链上保存结果。
+          self._result = _arguments;  //then链上没有错误结果处理函数，在then链上保存结果。
         }
       }
 
@@ -305,9 +305,9 @@
       } catch (error) {
         dealError(error);
       } finally {
-        if (!_this._result) {
+        if (!self._result) {
           chain += 1;
-          _this._result = false;  //标记结果已处理
+          self._result = false;  //标记结果已处理
         }
       }
     };
