@@ -271,6 +271,7 @@
 
       self._error = self._fail ? fail.shift() : self._error;
       self._success = self._success || self._each || self._eachSeries || self._parallel || self._series || function () {
+        self._success = null;
         self._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
       };
 
