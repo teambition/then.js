@@ -9,10 +9,11 @@ var async = require('async'),
 var list = [], tasks = [];
 
 function task(callback) {
-  // callback(null, 1);
-  setTimeout(function () {
-    callback(null, 1);
-  }, 4);
+  callback(null, 1);
+  // 模拟异步任务
+  // setTimeout(function () {
+  //   callback(null, 1);
+  // }, 4);
 }
 
 for (var i = 0; i < 100; i++) {
@@ -21,7 +22,6 @@ for (var i = 0; i < 100; i++) {
 }
 
 function eachAsync(deferred) {
-  console.time('Async');
   async.each(list, function (i, next) {
     task(next);
   }, function () {
@@ -30,8 +30,6 @@ function eachAsync(deferred) {
     }, function () {
       async.series(tasks, function () {
         async.parallel(tasks, function (error, result) {
-          console.log('result:', result.length);
-          console.timeEnd('Async');
           deferred.resolve();
         });
       });
@@ -40,7 +38,6 @@ function eachAsync(deferred) {
 }
 
 function eachThen(deferred) {
-  console.time('Thenjs');
   thenjs.each(list, function (defer, i) {
     task(defer);
   })
@@ -50,8 +47,6 @@ function eachThen(deferred) {
   .series(tasks)
   .parallel(tasks)
   .all(function (defer, error, result) {
-    console.log('result', result.length);
-    console.timeEnd('Thenjs');
     deferred.resolve();
   });
 }

@@ -1,4 +1,4 @@
-then.js 0.10.5[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 0.10.6[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 Another very small asynchronous promise tool!
 
@@ -18,11 +18,17 @@ Another very small asynchronous promise tool!
 ##Benchmark
 each、eachSeries、parallel、series长度100各跑一次`node test/benchmark.js`：
 
+###异步任务，基本一致：
+
 **then.js:** 0.32 ops/sec ±0.59% (6 runs sampled)
 
 **async:** 0.32 ops/sec ±0.30% (6 runs sampled)
 
-测分基本一致，但then.js可以链式调用（参考benchmark.js代码）！
+###同步任务，基本一致：
+
+**then.js:** 68.13 ops/sec ±1.34% (29 runs sampled)
+
+**async:** 68.62 ops/sec ±0.88% (25 runs sampled)
 
 ## Install
 

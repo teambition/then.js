@@ -11,10 +11,12 @@
   var emptyThen = {},
     slice = [].slice,
     isArray = Array.isArray || function (obj) {
+      // 兼容老浏览器
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
 
   if (!Function.prototype.bind) {
+    // 兼容老浏览器
     Function.prototype.bind = function (context) {
       var self = this, args = slice.call(arguments, 1);
       return function () {
@@ -31,10 +33,12 @@
     return typeof fn === 'function';
   }
 
+  // 生成参数不合法的错误提示
   function errorify(obj, method, type) {
     return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" function is not a ' + type + '!');
   }
 
+  // 将一组数据分发给任务函数，并行执行，出错或所有完成后 defer 处理
   function each(defer, array, iterator, context) {
     var i, end, total, _defer, resultArray = [];
 
@@ -68,6 +72,7 @@
     }
   }
 
+  // 将一组数据分发给任务函数，串行执行，出错或所有完成后 defer 处理
   function eachSeries(defer, array, iterator, context) {
     var end, i = -1, resultArray = [];
 
@@ -101,6 +106,7 @@
     }
   }
 
+  // 并行执行一组任务，出错或所有完成后 defer 处理
   function parallel(defer, array, context) {
     var i, end, total, _defer, resultArray = [];
 
@@ -136,6 +142,7 @@
     }
   }
 
+  // 串行执行一组任务，出错或所有完成后 defer 处理
   function series(defer, array, context) {
     var end, i = -1,
       resultArray = [];
@@ -180,15 +187,19 @@
     }
   }
 
+  // 封装 handler，如果 handler 不是 defer，则将 defer 注入成第一个参数
   function wrapTaskHandler(defer, handler) {
     return isFunction(handler) ? handler.nextThenObject ? handler : handler.bind(null, defer) : null;
   }
 
+  // 带闭包的 Promise 对象
   function closurePromise(debug) {
-    var fail = [], chain = 0,
+    var fail = [],  // 保存该链上的所有 fail 方法，用于夸链处理 error
+      chain = 0,  // 链计数器，用于 debug 模式
       Promise = function () {},
       prototype = Promise.prototype;
 
+    // 执行 fn，并返回新的 promise 对象
     function promiseFactory(fn, context) {
       var promise = new Promise(),
         defer = promise.defer.bind(promise);
@@ -197,22 +208,28 @@
       return promise;
     }
 
+    // 检查上一链的结果是否处理，未处理则处理
     function checkDefer(context) {
-      if (context._result) {  // then链上有未处理结果，任务已完成，直接defer进入下一链
+      if (context._result) {
         context.defer.apply(context, context._result);
       }
     }
 
+    // 是否开启 debug 模式，若开启，则将每一步的结果输入 debug 函数
     prototype.debug = debug && (isFunction(debug) ? debug :
       typeof console === 'object' && function () {
         console.log.apply(console, arguments);
       });
+
+    // promise 上的 all 方法
     prototype.all = function (allHandler) {
       return promiseFactory(function (defer, self) {
         self._all = wrapTaskHandler(defer, allHandler);
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 then 方法
     prototype.then = function (successHandler, errorHandler) {
       return promiseFactory(function (defer, self) {
         self._success = wrapTaskHandler(defer, successHandler);
@@ -220,6 +237,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 fail 方法
     prototype.fail = function (errorHandler) {
       return promiseFactory(function (defer, self) {
         self._fail = wrapTaskHandler(defer, errorHandler);
@@ -230,6 +249,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 each 方法
     prototype.each = function (array, iterator, context) {
       return promiseFactory(function (defer, self) {
         self._each = function (dArray, dIterator, dContext) {
@@ -238,6 +259,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 eachSeries 方法
     prototype.eachSeries = function (array, iterator, context) {
       return promiseFactory(function (defer, self) {
         self._eachSeries = function (dArray, dIterator, dContext) {
@@ -246,6 +269,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 parallel 方法
     prototype.parallel = function (array, context) {
       return promiseFactory(function (defer, self) {
         self._parallel = function (dArray, dContext) {
@@ -254,6 +279,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // promise 上的 series 方法
     prototype.series = function (array, context) {
       return promiseFactory(function (defer, self) {
         self._series = function (dArray, dContext) {
@@ -262,6 +289,8 @@
         checkDefer(self);
       }, this);
     };
+
+    // defer 处理结果，触发下一个链接，defer 已被注入 handler
     prototype.defer = function (err) {
       var self = this, _arguments = arguments;
 
@@ -269,8 +298,8 @@
       if (self._result === false) {
         return;  // then链上的结果已经处理，若重复执行 defer 则直接跳过；
       } else if (self._result) {
-        self._result = false;  //标记结果已处理
-      } else if (self.debug) { // self._result 未经赋值，表明第一次进入 defer，若存在 debug 则执行；
+        self._result = false;  // 第二次进入 defer，标记结果已处理
+      } else if (self.debug) { // 第一次进入 defer，若存在 debug 则执行；
         var args = slice.call(_arguments);
         args.unshift('\nResult of chain ' + chain + ':');
         self.debug.apply(self.debug, args);
@@ -298,7 +327,7 @@
         if (self._error || fail.length) {
           self._error = self._error || fail.shift();
           self._error.call(self._error.nextThenObject, error);
-        } else if (thenjs.onerror) {
+        } else if (isFunction(thenjs.onerror)) {
           thenjs.onerror(error);
         } else {
           self._result = _arguments;  //then链上没有错误结果处理函数，在then链上保存结果。
@@ -311,9 +340,11 @@
         dealError(error);
       }
     };
+
     return promiseFactory;
   }
 
+  // 生成 thenjs.each 和 thenjs.eachSeries
   function eachAndSeriesFactory(fn) {
     return function (array, iterator, context, debug) {
       return closurePromise(debug)(function (defer) {
@@ -322,6 +353,8 @@
     };
   }
 
+
+  // 生成 thenjs.parallel 和 thenjs.series
   function parallelAndSeriesFactory(fn) {
     return function (array, context, debug) {
       return closurePromise(debug)(function (defer) {
@@ -330,6 +363,7 @@
     };
   }
 
+  // 主函数
   function thenjs(startFn, context, debug) {
     return closurePromise(debug)(function (defer) {
       tryTask(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
