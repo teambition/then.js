@@ -203,10 +203,10 @@
       }
     }
 
-    prototype.debug = !debug || isFunction(debug) ? debug :
-      typeof console === 'object' && console.log && function () {
+    prototype.debug = debug && (isFunction(debug) ? debug :
+      typeof console === 'object' && function () {
         console.log.apply(console, arguments);
-      };
+      });
     prototype.all = function (allHandler) {
       return promiseFactory(function (defer, self) {
         self._all = wrapTaskHandler(defer, allHandler);
@@ -265,26 +265,30 @@
     prototype.defer = function (err) {
       var self = this, _arguments = arguments;
 
+      // 神逻辑～～
       if (self._result === false) {
-        return;  // then链上的结果已经处理，若重复执行defer则直接跳过；
+        return;  // then链上的结果已经处理，若重复执行 defer 则直接跳过；
+      } else if (self._result) {
+        self._result = false;  //标记结果已处理
+      } else if (self.debug) { // self._result 未经赋值，表明第一次进入 defer，若存在 debug 则执行；
+        var args = slice.call(_arguments);
+        args.unshift('\nResult of chain ' + chain + ':');
+        self.debug.apply(self.debug, args);
+        chain += 1;
       }
 
       self._error = self._fail ? fail.shift() : self._error;
-      self._success = self._success || self._each || self._eachSeries || self._parallel || self._series || function () {
-        self._success = null;
-        self._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
-      };
+      self._success = self._success || self._each || self._eachSeries || self._parallel || self._series;
 
       function execute() {
-        if (self.debug) {
-          var args = slice.call(_arguments);
-          args.unshift('\nResult of chain ' + chain + ':');
-          self.debug.apply(self.debug, args);
-        }
         if (self._all) {
           self._all.apply(self._all.nextThenObject, slice.call(_arguments));
         } else if (isNull(err)) {
-          self._success.apply(self._success.nextThenObject, slice.call(_arguments, 1));
+          if (self._success) {
+            self._success.apply(self._success.nextThenObject, slice.call(_arguments, 1));
+          } else {
+            self._result = _arguments;  //then链上没有正确结果处理函数，在then链上保存结果。
+          }
         } else {
           throw err;
         }
@@ -305,11 +309,6 @@
         execute();
       } catch (error) {
         dealError(error);
-      } finally {
-        if (!self._result) {
-          chain += 1;
-          self._result = false;  //标记结果已处理
-        }
       }
     };
     return promiseFactory;
