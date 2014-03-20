@@ -10,6 +10,7 @@
 (function () {
   var emptyThen = {},
     slice = [].slice,
+    nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout,
     isArray = Array.isArray || function (obj) {
       // 兼容老浏览器
       return Object.prototype.toString.call(obj) === '[object Array]';
@@ -180,11 +181,13 @@
   }
 
   function tryTask(defer, fn) {
-    try {
-      fn();
-    } catch (error) {
-      defer(error);
-    }
+    nextTick(function () {
+      try {
+        fn();
+      } catch (error) {
+        defer(error);
+      }
+    });
   }
 
   // 封装 handler，如果 handler 不是 defer，则将 defer 注入成第一个参数
