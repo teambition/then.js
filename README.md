@@ -1,4 +1,4 @@
-then.js 0.10.7[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 0.11.0[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 Another very small asynchronous promise tool!
 

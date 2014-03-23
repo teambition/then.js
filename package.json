@@ -4,7 +4,7 @@
   "author": {
     "name": "zensh"
   },
-  "version": "0.10.7",
+  "version": "0.11.0",
   "main": "then.js",
   "repository": {
     "type": "git",
@@ -27,12 +27,7 @@
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-jshint": "~0.7.2",
     "grunt-contrib-uglify": "~0.2.4",
-    "grunt-contrib-nodeunit": "~0.2.2",
-    "gulp": "~3.2.1",
-    "gulp-clean": "~0.1.2",
-    "gulp-jshint": "~1.3.2",
-    "gulp-uglify": "~0.1.0",
-    "gulp-rename": "~0.2.1"
+    "grunt-contrib-nodeunit": "~0.2.2"
   },
   "scripts": {
     "test": "grunt test"
