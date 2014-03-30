@@ -1,4 +1,4 @@
-// v0.11.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.11.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -43,7 +43,7 @@
   // ##内部 **each** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，并行执行，`defer` 处理最后结果
   function each(defer, array, iterator, context) {
-    var i, count, _next, result = [];
+    var end, count, _next, result = [];
 
     // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(index, error, value) {
@@ -56,12 +56,11 @@
     }
 
     if (!isArray(array)) return defer(errorify(array, 'each', 'array'));
-    if (!isFunction(iterator)) return defer(errorify(iterator, 'each'));
-    count = i = array.length - 1;
+    count = end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
     if (count < 0) return defer(null, result);
     // 并行执行所有任务
-    for (; i >= 0; i--) {
+    for (var i = 0; i <= end; i++) {
       _next = next.bind(null, i);
       _next._self = true;
       iterator.call(context, _next, array[i], i, array);
@@ -80,11 +79,15 @@
       // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
       result[i] = arguments.length > 2 ? slice.call(arguments, 1) : value;
       i += 1;
-      return i > count ? defer(null, result) : iterator.call(context, next, array[i], i, array);
+      if (i > count) return defer(null, result);
+      try {
+        iterator.call(context, next, array[i], i, array);
+      } catch (error) {
+        defer(error);
+      }
     }
 
     if (!isArray(array)) return defer(errorify(array, 'eachSeries', 'array'));
-    if (!isFunction(iterator)) return defer(errorify(iterator, 'eachSeries'));
     count = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
     if (count < 0) return defer(null, result);
@@ -96,7 +99,7 @@
   // ##内部 **parallel** 函数
   // 并行执行一组 `array` 任务，`defer` 处理最后结果
   function parallel(defer, array, context) {
-    var i, count, _next, task, result = [];
+    var end, count, _next, task, result = [];
 
     // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(index, error, value) {
@@ -109,13 +112,12 @@
     }
 
     if (!isArray(array)) return defer(errorify(array, 'parallel', 'array'));
-    count = i = array.length - 1;
+    count = end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
     if (count < 0) return defer(null, result);
     // 并行执行所有任务
-    for (; i >= 0; i--) {
+    for (var i = 0; i <= end; i++) {
       task = array[i];
-      if (!isFunction(task)) return defer(errorify(task, 'parallel'));
       _next = next.bind(null, i);
       _next._self = true;
       task.call(context, _next, i, array);
@@ -136,7 +138,11 @@
       i += 1;
       if (i > count) return defer(null, result);
       task = array[i];
-      return isFunction(task) ? task.call(context, next, i, array) : defer(errorify(task, 'series'));
+      try {
+        task.call(context, next, i, array);
+      } catch (error) {
+        defer(error);
+      }
     }
 
     if (!isArray(array)) return defer(errorify(array, 'series', 'array'));
@@ -145,18 +151,8 @@
     if (count < 0) return defer(null, result);
     task = array[i];
     next._self = true;
-    // 检查任务是否合法，合法则开始第一个任务，否则立即终止，
-    return isFunction(task) ? task.call(context, next, i, array) : defer(errorify(task, 'series'));
+    return task.call(context, next, i, array);
   }
-
-  // ##内部 **Thenjs** 构造函数
-  // 所有 **Then** 链从此继承
-  function Thenjs() {}
-
-  // 定义默认 `debug` 方法
-  Thenjs.prototype.debug = typeof console === 'object' && function () {
-    console.log.apply(console, arguments);
-  };
 
   // 异步执行函数，用于确保整条链生成后才开始执行第一个任务，如果出错，则 `defer` 处理。
   function tryTask(defer, task) {
@@ -174,12 +170,21 @@
     return isFunction(handler) ? handler._self ? handler : handler.bind(null, defer) : null;
   }
 
+  // ##内部 **Thenjs** 构造函数
+  // 所有 **Then** 链从此继承
+  function Thenjs() {}
+
+  // 定义默认 `debug` 方法
+  Thenjs.prototype.debug = typeof console === 'object' && function () {
+    console.log.apply(console, arguments);
+  };
+
   // ##内部 **Then** 构造函数
   // 由闭包生成，每一条 **Then** 链的所有 **Then** 对象继承于共同的 **Then** 构造函数
   // 不同的 **Then** 链的 **Then** 构造函数不同，但都继承于 **Thenjs** 构造函数
   function closureThen(debug) {
 
-    // 新的 **Then** 构造函数
+    // 闭包中新的 **Then** 构造函数
     function Then() {}
     // 继承于 **Thenjs** 构造函数
     var prototype = Then.prototype = new Thenjs(),
@@ -278,7 +283,6 @@
     prototype._defer = function (err) {
       var allHandler, errorHandler, successHandler, self = this, args = arguments;
 
-      // 神逻辑～～
       // then链上的结果已经处理，若重复执行 defer 则直接跳过；
       if (self._result === false) return;
       if (self._result) {
