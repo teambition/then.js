@@ -27,7 +27,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v0.11.0 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v0.11.1 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
@@ -121,7 +121,7 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">each</span><span class="hljs-params">(defer, array, iterator, context)</span> {</span>
-    <span class="hljs-keyword">var</span> i, count, _next, result = [];</pre></div></div>
+    <span class="hljs-keyword">var</span> end, count, _next, result = [];</pre></div></div>
             
         </li>
         
@@ -158,8 +158,7 @@
     }
 
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'each'</span>, <span class="hljs-string">'array'</span>));
-    <span class="hljs-keyword">if</span> (!isFunction(iterator)) <span class="hljs-keyword">return</span> defer(errorify(iterator, <span class="hljs-string">'each'</span>));
-    count = i = array.length - <span class="hljs-number">1</span>;</pre></div></div>
+    count = end = array.length - <span class="hljs-number">1</span>;</pre></div></div>
             
         </li>
         
@@ -189,7 +188,7 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (; i &gt;= <span class="hljs-number">0</span>; i--) {
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
       _next = next.bind(<span class="hljs-literal">null</span>, i);
       _next._self = <span class="hljs-literal">true</span>;
       iterator.call(context, _next, array[i], i, array);
@@ -244,11 +243,15 @@
             
             <div class="content"><div class='highlight'><pre>      result[i] = <span class="hljs-built_in">arguments</span>.length &gt; <span class="hljs-number">2</span> ? slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">1</span>) : value;
       i += <span class="hljs-number">1</span>;
-      <span class="hljs-keyword">return</span> i &gt; count ? defer(<span class="hljs-literal">null</span>, result) : iterator.call(context, next, array[i], i, array);
+      <span class="hljs-keyword">if</span> (i &gt; count) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+      <span class="hljs-keyword">try</span> {
+        iterator.call(context, next, array[i], i, array);
+      } <span class="hljs-keyword">catch</span> (error) {
+        defer(error);
+      }
     }
 
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'eachSeries'</span>, <span class="hljs-string">'array'</span>));
-    <span class="hljs-keyword">if</span> (!isFunction(iterator)) <span class="hljs-keyword">return</span> defer(errorify(iterator, <span class="hljs-string">'eachSeries'</span>));
     count = array.length - <span class="hljs-number">1</span>;</pre></div></div>
             
         </li>
@@ -298,7 +301,7 @@
             </div>
             
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallel</span><span class="hljs-params">(defer, array, context)</span> {</span>
-    <span class="hljs-keyword">var</span> i, count, _next, task, result = [];</pre></div></div>
+    <span class="hljs-keyword">var</span> end, count, _next, task, result = [];</pre></div></div>
             
         </li>
         
@@ -335,7 +338,7 @@
     }
 
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'parallel'</span>, <span class="hljs-string">'array'</span>));
-    count = i = array.length - <span class="hljs-number">1</span>;</pre></div></div>
+    count = end = array.length - <span class="hljs-number">1</span>;</pre></div></div>
             
         </li>
         
@@ -365,9 +368,8 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (; i &gt;= <span class="hljs-number">0</span>; i--) {
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
       task = array[i];
-      <span class="hljs-keyword">if</span> (!isFunction(task)) <span class="hljs-keyword">return</span> defer(errorify(task, <span class="hljs-string">'parallel'</span>));
       _next = next.bind(<span class="hljs-literal">null</span>, i);
       _next._self = <span class="hljs-literal">true</span>;
       task.call(context, _next, i, array);
@@ -424,7 +426,11 @@
       i += <span class="hljs-number">1</span>;
       <span class="hljs-keyword">if</span> (i &gt; count) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
       task = array[i];
-      <span class="hljs-keyword">return</span> isFunction(task) ? task.call(context, next, i, array) : defer(errorify(task, <span class="hljs-string">'series'</span>));
+      <span class="hljs-keyword">try</span> {
+        task.call(context, next, i, array);
+      } <span class="hljs-keyword">catch</span> (error) {
+        defer(error);
+      }
     }
 
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'series'</span>, <span class="hljs-string">'array'</span>));
@@ -445,7 +451,9 @@
             
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (count &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
     task = array[i];
-    next._self = <span class="hljs-literal">true</span>;</pre></div></div>
+    next._self = <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">return</span> task.call(context, next, i, array);
+  }</pre></div></div>
             
         </li>
         
@@ -455,55 +463,6 @@
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-24">&#182;</a>
-              </div>
-              <p>检查任务是否合法，合法则开始第一个任务，否则立即终止，</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">return</span> isFunction(task) ? task.call(context, next, i, array) : defer(errorify(task, <span class="hljs-string">'series'</span>));
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-25">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
-              </div>
-              <h2 id="-thenjs-">内部 <strong>Thenjs</strong> 构造函数</h2>
-<p>所有 <strong>Then</strong> 链从此继承</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Thenjs</span><span class="hljs-params">()</span> {</span>}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-26">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
-              </div>
-              <p>定义默认 <code>debug</code> 方法</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  Thenjs.prototype.debug = <span class="hljs-keyword">typeof</span> console === <span class="hljs-string">'object'</span> &amp;&amp; <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
-    console.log.apply(console, <span class="hljs-built_in">arguments</span>);
-  };</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-27">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>异步执行函数，用于确保整条链生成后才开始执行第一个任务，如果出错，则 <code>defer</code> 处理。</p>
 
@@ -522,11 +481,11 @@
         </li>
         
         
-        <li id="section-28">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p>封装 handler，<code>_self</code> 属性判定 handler 不是 <code>defer</code> ，不是则将 <code>defer</code> 注入成第一个参数</p>
 
@@ -539,11 +498,44 @@
         </li>
         
         
-        <li id="section-29">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <h2 id="-thenjs-">内部 <strong>Thenjs</strong> 构造函数</h2>
+<p>所有 <strong>Then</strong> 链从此继承</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Thenjs</span><span class="hljs-params">()</span> {</span>}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>定义默认 <code>debug</code> 方法</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Thenjs.prototype.debug = <span class="hljs-keyword">typeof</span> console === <span class="hljs-string">'object'</span> &amp;&amp; <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+    console.log.apply(console, <span class="hljs-built_in">arguments</span>);
+  };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <h2 id="-then-">内部 <strong>Then</strong> 构造函数</h2>
 <p>由闭包生成，每一条 <strong>Then</strong> 链的所有 <strong>Then</strong> 对象继承于共同的 <strong>Then</strong> 构造函数
@@ -556,13 +548,13 @@
         </li>
         
         
-        <li id="section-30">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
-              <p>新的 <strong>Then</strong> 构造函数</p>
+              <p>闭包中新的 <strong>Then</strong> 构造函数</p>
 
             </div>
             
@@ -571,11 +563,11 @@
         </li>
         
         
-        <li id="section-31">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>继承于 <strong>Thenjs</strong> 构造函数</p>
 
@@ -586,11 +578,11 @@
         </li>
         
         
-        <li id="section-32">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>闭包，保存该链上的所有 <code>fail</code> 方法，用于夸链处理 error</p>
 
@@ -601,11 +593,11 @@
         </li>
         
         
-        <li id="section-33">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p>闭包，链计数器，用于 debug 模式</p>
 
@@ -616,11 +608,11 @@
         </li>
         
         
-        <li id="section-34">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>注入 defer，执行 fn，并返回新的 <strong>Then</strong> 对象</p>
 
@@ -633,11 +625,11 @@
         </li>
         
         
-        <li id="section-35">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p>标记 defer，defer 作为 handler 时不会被注入 defer，见 <code>wrapTaskHandler</code></p>
 
@@ -648,11 +640,11 @@
         </li>
         
         
-        <li id="section-36">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>注入 defer</p>
 
@@ -663,11 +655,11 @@
         </li>
         
         
-        <li id="section-37">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>检查上一链的结果是否处理，未处理则处理，用于续接 <strong>Then</strong> 链</p>
 
@@ -682,11 +674,11 @@
         </li>
         
         
-        <li id="section-38">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>是否开启 <strong>debug</strong> 模式，若开启，则将每一步的结果输入 <code>debug</code> 方法</p>
 
@@ -697,11 +689,11 @@
         </li>
         
         
-        <li id="section-39">
+        <li id="section-38">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>all</strong> 方法</p>
 
@@ -716,11 +708,11 @@
         </li>
         
         
-        <li id="section-40">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>then</strong> 方法</p>
 
@@ -736,11 +728,11 @@
         </li>
         
         
-        <li id="section-41">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>fail</strong> 方法</p>
 
@@ -753,11 +745,11 @@
         </li>
         
         
-        <li id="section-42">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>对于链上的 fail 方法，如果无 error ，则穿透该链，将上一部结果输入下一链</p>
 
@@ -769,11 +761,11 @@
         </li>
         
         
-        <li id="section-43">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>将 fail 存入闭包，使得在此链之前产生的 error 也能被 fail 捕捉</p>
 
@@ -786,11 +778,11 @@
         </li>
         
         
-        <li id="section-44">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>each</strong> 方法</p>
 
@@ -803,11 +795,11 @@
         </li>
         
         
-        <li id="section-45">
+        <li id="section-44">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
               </div>
               <p>优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
 <code>dArray</code>, <code>dIterator</code>, <code>dContext</code> 来自于上一链的 <strong>defer</strong></p>
@@ -822,11 +814,11 @@
         </li>
         
         
-        <li id="section-46">
+        <li id="section-45">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>eachSeries</strong> 方法</p>
 
@@ -843,11 +835,11 @@
         </li>
         
         
-        <li id="section-47">
+        <li id="section-46">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>parallel</strong> 方法</p>
 
@@ -864,11 +856,11 @@
         </li>
         
         
-        <li id="section-48">
+        <li id="section-47">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>series</strong> 方法</p>
 
@@ -885,11 +877,11 @@
         </li>
         
         
-        <li id="section-49">
+        <li id="section-48">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-48">&#182;</a>
               </div>
               <p>核心 <strong>defer</strong> 方法
 <strong>defer</strong> 收集任务结果，触发下一个链接，它被注入各个 handler，不应该直接调用
@@ -903,14 +895,13 @@
         </li>
         
         
-        <li id="section-50">
+        <li id="section-49">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-49">&#182;</a>
               </div>
-              <p>神逻辑～～
-then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
+              <p>then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
 
             </div>
             
@@ -920,11 +911,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-51">
+        <li id="section-50">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-50">&#182;</a>
               </div>
               <p>_result 已存在，表明上一次 defer 没有 handler 处理
 这是第二次进入 defer 继续处理，并标记结果已处理，这是由续接 <strong>Then</strong> 链触发</p>
@@ -937,11 +928,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-52">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <p>表明这是第一次进入 defer，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；</p>
 
@@ -965,11 +956,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-53">
+        <li id="section-52">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-52">&#182;</a>
               </div>
               <p>对于正确结果，<strong>Then</strong> 链上没有相应 handler 处理，则在 <strong>Then</strong> 链上保存结果，等待下一次处理。</p>
 
@@ -986,11 +977,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-54">
+        <li id="section-53">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
+                <a class="pilcrow" href="#section-53">&#182;</a>
               </div>
               <p>获取本链的 error handler 或者链上的fail handler</p>
 
@@ -1003,11 +994,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-55">
+        <li id="section-54">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-55">&#182;</a>
+                <a class="pilcrow" href="#section-54">&#182;</a>
               </div>
               <p>如果定义了全局 <strong>onerror</strong>，则用它处理</p>
 
@@ -1019,11 +1010,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-56">
+        <li id="section-55">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-55">&#182;</a>
               </div>
               <p>对于 error，<strong>Then</strong> 链上没有相应 handler 处理，则在 <strong>Then</strong> 链上保存结果，等待下一次处理。</p>
 
@@ -1046,11 +1037,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-57">
+        <li id="section-56">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-56">&#182;</a>
               </div>
               <p>工厂函数，生成 thenjs.each 和 thenjs.eachSeries</p>
 
@@ -1067,11 +1058,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-58">
+        <li id="section-57">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-57">&#182;</a>
               </div>
               <p>工厂函数，生成 thenjs.parallel 和 thenjs.series</p>
 
@@ -1088,11 +1079,11 @@ then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
         </li>
         
         
-        <li id="section-59">
+        <li id="section-58">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-59">&#182;</a>
+                <a class="pilcrow" href="#section-58">&#182;</a>
               </div>
               <p>对外输出的主函数</p>
 
