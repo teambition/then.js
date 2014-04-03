@@ -36,7 +36,7 @@
 
   // 参数不合法时生成相应的错误
   function errorify(obj, method, type) {
-    type = type || 'function';
+    type = type || 'array';
     return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" is not a ' + type + '!');
   }
 
@@ -55,10 +55,10 @@
       return count < 0 && defer(null, result);
     }
 
-    if (!isArray(array)) return defer(errorify(array, 'each', 'array'));
+    if (!isArray(array)) return defer(errorify(array, 'each'));
     count = end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
-    if (count < 0) return defer(null, result);
+    if (end < 0) return defer(null, result);
     // 并行执行所有任务
     for (var i = 0; i <= end; i++) {
       _next = next.bind(null, i);
@@ -70,7 +70,7 @@
   // ##内部 **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`defer` 处理最后结果
   function eachSeries(defer, array, iterator, context) {
-    var i = 0, count, result = [];
+    var i = 0, end, result = [];
 
     // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(err, value) {
@@ -79,7 +79,7 @@
       // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
       result[i] = arguments.length > 2 ? slice.call(arguments, 1) : value;
       i += 1;
-      if (i > count) return defer(null, result);
+      if (i > end) return defer(null, result);
       try {
         iterator.call(context, next, array[i], i, array);
       } catch (error) {
@@ -87,10 +87,10 @@
       }
     }
 
-    if (!isArray(array)) return defer(errorify(array, 'eachSeries', 'array'));
-    count = array.length - 1;
+    if (!isArray(array)) return defer(errorify(array, 'eachSeries'));
+    end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
-    if (count < 0) return defer(null, result);
+    if (end < 0) return defer(null, result);
     next._self = true;
     // 执行第一个任务
     iterator.call(context, next, array[i], i, array);
@@ -111,10 +111,10 @@
       return count < 0 && defer(null, result);
     }
 
-    if (!isArray(array)) return defer(errorify(array, 'parallel', 'array'));
+    if (!isArray(array)) return defer(errorify(array, 'parallel'));
     count = end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
-    if (count < 0) return defer(null, result);
+    if (end < 0) return defer(null, result);
     // 并行执行所有任务
     for (var i = 0; i <= end; i++) {
       task = array[i];
@@ -127,7 +127,7 @@
   // ##内部 **series** 函数
   // 串行执行一组 `array` 任务，`defer` 处理最后结果
   function series(defer, array, context) {
-    var i = 0, count, task, result = [];
+    var i = 0, end, task, result = [];
 
     // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(err, value) {
@@ -136,7 +136,7 @@
       // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
       result[i] = arguments.length > 2 ? slice.call(arguments, 1) : value;
       i += 1;
-      if (i > count) return defer(null, result);
+      if (i > end) return defer(null, result);
       task = array[i];
       try {
         task.call(context, next, i, array);
@@ -145,10 +145,10 @@
       }
     }
 
-    if (!isArray(array)) return defer(errorify(array, 'series', 'array'));
-    count = array.length - 1;
+    if (!isArray(array)) return defer(errorify(array, 'series'));
+    end = array.length - 1;
     // 如果数组为空，直接 `defer(null, [])`
-    if (count < 0) return defer(null, result);
+    if (end < 0) return defer(null, result);
     task = array[i];
     next._self = true;
     return task.call(context, next, i, array);
@@ -371,6 +371,6 @@
   } else if (typeof define === 'function' && define.amd) {
     define([], function () {return thenjs;});
   } else if (typeof window === 'object') {
-    window.then = thenjs;
+    window.thenjs = thenjs;
   }
 }());
