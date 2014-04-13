@@ -10,73 +10,120 @@
 <body>
   <div id="container">
     <div id="background"></div>
-    
+
     <ul class="sections">
-        
+
           <li id="title">
               <div class="annotation">
                   <h1>then.js</h1>
               </div>
           </li>
-        
-        
-        
+
+
+
         <li id="section-1">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v0.11.1 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v0.12.0 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre><span class="hljs-pi">
 'use strict'</span>;
-<span class="hljs-comment">/* global module, define, process, console */</span>
+<span class="hljs-comment">/* global module, define, setImmediate, console, MutationObserver, MessageChannel */</span>
 (<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
-  <span class="hljs-keyword">var</span> slice = [].slice,
-    nextTick = <span class="hljs-keyword">typeof</span> process === <span class="hljs-string">'object'</span> &amp;&amp; process.nextTick ? process.nextTick : setTimeout,</pre></div></div>
-            
+  <span class="hljs-keyword">var</span> slice = [].slice,</pre></div></div>
+
         </li>
-        
-        
+
+
         <li id="section-2">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>nextTick 用于异步执行函数，避免 <code>Maximum call stack size exceeded</code></p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>    nextTick = <span class="hljs-keyword">typeof</span> setImmediate === <span class="hljs-string">'function'</span> ? setImmediate : <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(fn)</span> {</span>
+      setTimeout(fn, <span class="hljs-number">0</span>);
+    },</pre></div></div>
+
+        </li>
+
+
+        <li id="section-3">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
               <p>兼容 ES3 的 <code>isArray</code></p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    isArray = <span class="hljs-built_in">Array</span>.isArray || <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(obj)</span> {</span>
       <span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.prototype.toString.call(obj) === <span class="hljs-string">'[object Array]'</span>;
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-3">
+
+
+        <li id="section-4">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-3">&#182;</a>
+                <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>兼容 ES3 的 <code>bind</code></p>
+              <p>浏览器端的 setImmediate</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (!<span class="hljs-built_in">Function</span>.prototype.bind) {
-    <span class="hljs-built_in">Function</span>.prototype.bind = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(context)</span> {</span>
-      <span class="hljs-keyword">var</span> self = <span class="hljs-keyword">this</span>, args = slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">1</span>);
-      <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
-        <span class="hljs-keyword">return</span> self.apply(context, args.concat(slice.call(<span class="hljs-built_in">arguments</span>)));
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> MutationObserver === <span class="hljs-string">'function'</span>) {
+    nextTick = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(fn)</span> {</span>
+      <span class="hljs-keyword">var</span> element = document.createElement(<span class="hljs-string">'div'</span>),
+        observer = <span class="hljs-keyword">new</span> MutationObserver(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+          observer.disconnect();
+          <span class="hljs-keyword">return</span> fn();
+        });
+      observer.observe(element, {attributes: <span class="hljs-literal">true</span>});
+      element.setAttribute(<span class="hljs-string">'id'</span>, <span class="hljs-number">1</span>);
+    };
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> MessageChannel === <span class="hljs-string">'function'</span>) {
+    nextTick = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(fn)</span> {</span>
+      <span class="hljs-keyword">var</span> channel = <span class="hljs-keyword">new</span> MessageChannel();
+      channel.port1.onmessage = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+        <span class="hljs-keyword">return</span> fn();
       };
+      channel.port2.postMessage(<span class="hljs-number">0</span>);
+    };
+  }</pre></div></div>
+
+        </li>
+
+
+        <li id="section-5">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>内部 <code>bind</code> 实现，比原生 <code>bind</code> 快！</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">bind</span><span class="hljs-params">(fn, context)</span> {</span>
+    <span class="hljs-keyword">var</span> args = slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">2</span>);
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+      <span class="hljs-keyword">return</span> fn.apply(context, args.concat(slice.call(<span class="hljs-built_in">arguments</span>)));
     };
   }
 
@@ -87,120 +134,106 @@
   <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">isFunction</span><span class="hljs-params">(fn)</span> {</span>
     <span class="hljs-keyword">return</span> <span class="hljs-keyword">typeof</span> fn === <span class="hljs-string">'function'</span>;
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-4">
+
+
+        <li id="section-6">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-4">&#182;</a>
+                <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
               <p>参数不合法时生成相应的错误</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">errorify</span><span class="hljs-params">(obj, method, type)</span> {</span>
-    type = type || <span class="hljs-string">'function'</span>;
+    type = type || <span class="hljs-string">'array'</span>;
     <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'Argument '</span> + (obj &amp;&amp; obj.toString()) + <span class="hljs-string">' in "'</span> + method + <span class="hljs-string">'" is not a '</span> + type + <span class="hljs-string">'!'</span>);
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-5">
+
+
+        <li id="section-7">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>用于生成 <code>each</code> 和 <code>parallel</code> 的 <code>next</code></p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallelNext</span><span class="hljs-params">(defer, result, counter, i)</span> {</span>
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(error, value)</span> {</span>
+      <span class="hljs-keyword">if</span> (!isNull(error)) <span class="hljs-keyword">return</span> defer(error);
+      result[i] = value;
+      <span class="hljs-keyword">return</span> --counter.i &lt; <span class="hljs-number">0</span> &amp;&amp; defer(<span class="hljs-literal">null</span>, result);
+    }
+    next._self = <span class="hljs-literal">true</span>;
+    <span class="hljs-keyword">return</span> next;
+  }</pre></div></div>
+
+        </li>
+
+
+        <li id="section-8">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
               </div>
               <h2 id="-each-">内部 <strong>each</strong> 函数</h2>
 <p>将一组数据 <code>array</code> 分发给任务迭代函数 <code>iterator</code>，并行执行，<code>defer</code> 处理最后结果</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">each</span><span class="hljs-params">(defer, array, iterator, context)</span> {</span>
-    <span class="hljs-keyword">var</span> end, count, _next, result = [];</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-6">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
-              </div>
-              <p>注入任务函数的 ‘defer’，用于收集处理任务结果，如果出现 <code>error</code> ，立即 <code>defer</code> 处理</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(index, error, value)</span> {</span>
-      <span class="hljs-keyword">if</span> (!isNull(error)) <span class="hljs-keyword">return</span> defer(error);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-7">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-7">&#182;</a>
-              </div>
-              <p>按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组</p>
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">each</span><span class="hljs-params">(defer, array, iterator)</span> {</span>
+    <span class="hljs-keyword">var</span> end, result = [], counter = {};
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      result[index] = <span class="hljs-built_in">arguments</span>.length &gt; <span class="hljs-number">3</span> ? slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">2</span>) : value;
-      count -= <span class="hljs-number">1</span>;
-      <span class="hljs-keyword">return</span> count &lt; <span class="hljs-number">0</span> &amp;&amp; defer(<span class="hljs-literal">null</span>, result);
+    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'each'</span>));
+    counter.i = end = array.length - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
+      iterator(parallelNext(defer, result, counter, i), array[i], i, array);
     }
+  }</pre></div></div>
 
-    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'each'</span>, <span class="hljs-string">'array'</span>));
-    count = end = array.length - <span class="hljs-number">1</span>;</pre></div></div>
-            
         </li>
-        
-        
-        <li id="section-8">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
-              </div>
-              <p>如果数组为空，直接 <code>defer(null, [])</code></p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (count &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);</pre></div></div>
-            
-        </li>
-        
-        
+
         <li id="section-9">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
-              <p>并行执行所有任务</p>
+              <h2 id="-parallel-">内部 <strong>parallel</strong> 函数</h2>
+<p>并行执行一组 <code>array</code> 任务，<code>defer</code> 处理最后结果</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
-      _next = next.bind(<span class="hljs-literal">null</span>, i);
-      _next._self = <span class="hljs-literal">true</span>;
-      iterator.call(context, _next, array[i], i, array);
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallel</span><span class="hljs-params">(defer, array)</span> {</span>
+    <span class="hljs-keyword">var</span> end, result = [], counter = {};
+
+    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'parallel'</span>));
+    counter.i = end = array.length - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
+      array[i](parallelNext(defer, result, counter, i), i, array);
     }
   }</pre></div></div>
-            
+
         </li>
-        
-        
+
+
         <li id="section-10">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
@@ -208,736 +241,531 @@
 <p>将一组数据 <code>array</code> 分发给任务迭代函数 <code>iterator</code>，串行执行，<code>defer</code> 处理最后结果</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">eachSeries</span><span class="hljs-params">(defer, array, iterator, context)</span> {</span>
-    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, count, result = [];</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-11">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
-              </div>
-              <p>注入任务函数的 ‘defer’，用于收集处理任务结果，如果出现 <code>error</code> ，立即 <code>defer</code> 处理</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(err, value)</span> {</span>
-      <span class="hljs-keyword">if</span> (!isNull(err)) <span class="hljs-keyword">return</span> defer(err);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-12">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
-              </div>
-              <p>按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组</p>
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">eachSeries</span><span class="hljs-params">(defer, array, iterator)</span> {</span>
+    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, end, result = [];
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      result[i] = <span class="hljs-built_in">arguments</span>.length &gt; <span class="hljs-number">2</span> ? slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">1</span>) : value;
-      i += <span class="hljs-number">1</span>;
-      <span class="hljs-keyword">if</span> (i &gt; count) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(err, value)</span> {</span>
+      <span class="hljs-keyword">if</span> (!isNull(err)) <span class="hljs-keyword">return</span> defer(err);
+      result[i] = value;
+      <span class="hljs-keyword">if</span> (++i &gt; end) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
       <span class="hljs-keyword">try</span> {
-        iterator.call(context, next, array[i], i, array);
+        nextTick(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+          iterator(next, array[i], i, array);
+        });
       } <span class="hljs-keyword">catch</span> (error) {
         defer(error);
       }
     }
+    next._self = <span class="hljs-literal">true</span>;
 
-    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'eachSeries'</span>, <span class="hljs-string">'array'</span>));
-    count = array.length - <span class="hljs-number">1</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-13">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
-              </div>
-              <p>如果数组为空，直接 <code>defer(null, [])</code></p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (count &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
-    next._self = <span class="hljs-literal">true</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-14">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
-              </div>
-              <p>执行第一个任务</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    iterator.call(context, next, array[i], i, array);
+    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'eachSeries'</span>));
+    end = array.length - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+    iterator(next, array[i], i, array);
   }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-15">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
-              </div>
-              <h2 id="-parallel-">内部 <strong>parallel</strong> 函数</h2>
-<p>并行执行一组 <code>array</code> 任务，<code>defer</code> 处理最后结果</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallel</span><span class="hljs-params">(defer, array, context)</span> {</span>
-    <span class="hljs-keyword">var</span> end, count, _next, task, result = [];</pre></div></div>
-            
         </li>
-        
-        
-        <li id="section-16">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
-              </div>
-              <p>注入任务函数的 ‘defer’，用于收集处理任务结果，如果出现 <code>error</code> ，立即 <code>defer</code> 处理</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(index, error, value)</span> {</span>
-      <span class="hljs-keyword">if</span> (!isNull(error)) <span class="hljs-keyword">return</span> defer(error);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-17">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
-              </div>
-              <p>按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      result[index] = <span class="hljs-built_in">arguments</span>.length &gt; <span class="hljs-number">3</span> ? slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">2</span>) : value;
-      count -= <span class="hljs-number">1</span>;
-      <span class="hljs-keyword">return</span> count &lt; <span class="hljs-number">0</span> &amp;&amp; defer(<span class="hljs-literal">null</span>, result);
-    }
-
-    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'parallel'</span>, <span class="hljs-string">'array'</span>));
-    count = end = array.length - <span class="hljs-number">1</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-18">
+        <li id="section-11">
             <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
-              </div>
-              <p>如果数组为空，直接 <code>defer(null, [])</code></p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (count &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-19">
-            <div class="annotation">
-              
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
-              </div>
-              <p>并行执行所有任务</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
-      task = array[i];
-      _next = next.bind(<span class="hljs-literal">null</span>, i);
-      _next._self = <span class="hljs-literal">true</span>;
-      task.call(context, _next, i, array);
-    }
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-20">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
               <h2 id="-series-">内部 <strong>series</strong> 函数</h2>
 <p>串行执行一组 <code>array</code> 任务，<code>defer</code> 处理最后结果</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">series</span><span class="hljs-params">(defer, array, context)</span> {</span>
-    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, count, task, result = [];</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-21">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
-              </div>
-              <p>注入任务函数的 ‘defer’，用于收集处理任务结果，如果出现 <code>error</code> ，立即 <code>defer</code> 处理</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(err, value)</span> {</span>
-      <span class="hljs-keyword">if</span> (!isNull(err)) <span class="hljs-keyword">return</span> defer(err);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-22">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
-              </div>
-              <p>按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组</p>
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">series</span><span class="hljs-params">(defer, array)</span> {</span>
+    <span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>, end, result = [];
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      result[i] = <span class="hljs-built_in">arguments</span>.length &gt; <span class="hljs-number">2</span> ? slice.call(<span class="hljs-built_in">arguments</span>, <span class="hljs-number">1</span>) : value;
-      i += <span class="hljs-number">1</span>;
-      <span class="hljs-keyword">if</span> (i &gt; count) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
-      task = array[i];
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(err, value)</span> {</span>
+      <span class="hljs-keyword">if</span> (!isNull(err)) <span class="hljs-keyword">return</span> defer(err);
+      result[i] = value;
+      <span class="hljs-keyword">if</span> (++i &gt; end) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
       <span class="hljs-keyword">try</span> {
-        task.call(context, next, i, array);
+        nextTick(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+          array[i](next, i, array);
+        });
       } <span class="hljs-keyword">catch</span> (error) {
         defer(error);
       }
     }
-
-    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'series'</span>, <span class="hljs-string">'array'</span>));
-    count = array.length - <span class="hljs-number">1</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-23">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
-              </div>
-              <p>如果数组为空，直接 <code>defer(null, [])</code></p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (count &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
-    task = array[i];
     next._self = <span class="hljs-literal">true</span>;
-    <span class="hljs-keyword">return</span> task.call(context, next, i, array);
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-24">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
-              </div>
-              <p>异步执行函数，用于确保整条链生成后才开始执行第一个任务，如果出错，则 <code>defer</code> 处理。</p>
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">tryTask</span><span class="hljs-params">(defer, task)</span> {</span>
-    nextTick(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
-      <span class="hljs-keyword">try</span> {
-        task();
-      } <span class="hljs-keyword">catch</span> (error) {
-        defer(error);
-      }
-    });
+    <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> defer(errorify(array, <span class="hljs-string">'series'</span>));
+    end = array.length - <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> defer(<span class="hljs-literal">null</span>, result);
+    array[i](next, i, array);
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-25">
+
+
+        <li id="section-12">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <p>封装 handler，<code>_self</code> 属性判定 handler 不是 <code>defer</code> ，不是则将 <code>defer</code> 注入成第一个参数</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">wrapTaskHandler</span><span class="hljs-params">(defer, handler)</span> {</span>
-    <span class="hljs-keyword">return</span> isFunction(handler) ? handler._self ? handler : handler.bind(<span class="hljs-literal">null</span>, defer) : <span class="hljs-literal">null</span>;
+    <span class="hljs-keyword">return</span> isFunction(handler) ? handler._self ? handler : bind(handler, <span class="hljs-literal">null</span>, defer) : <span class="hljs-literal">null</span>;
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-26">
+
+
+        <li id="section-13">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
               <h2 id="-thenjs-">内部 <strong>Thenjs</strong> 构造函数</h2>
 <p>所有 <strong>Then</strong> 链从此继承</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Thenjs</span><span class="hljs-params">()</span> {</span>}</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-27">
+
+
+        <li id="section-14">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <p>定义默认 <code>debug</code> 方法</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  Thenjs.prototype.debug = <span class="hljs-keyword">typeof</span> console === <span class="hljs-string">'object'</span> &amp;&amp; <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
     console.log.apply(console, <span class="hljs-built_in">arguments</span>);
   };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-28">
+
+
+        <li id="section-15">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
               <h2 id="-then-">内部 <strong>Then</strong> 构造函数</h2>
 <p>由闭包生成，每一条 <strong>Then</strong> 链的所有 <strong>Then</strong> 对象继承于共同的 <strong>Then</strong> 构造函数
 不同的 <strong>Then</strong> 链的 <strong>Then</strong> 构造函数不同，但都继承于 <strong>Thenjs</strong> 构造函数</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">closureThen</span><span class="hljs-params">(debug)</span> {</span></pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-29">
+
+
+        <li id="section-16">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <p>闭包中新的 <strong>Then</strong> 构造函数</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Then</span><span class="hljs-params">()</span> {</span>}</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-30">
+
+
+        <li id="section-17">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p>继承于 <strong>Thenjs</strong> 构造函数</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> prototype = Then.prototype = <span class="hljs-keyword">new</span> Thenjs(),</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-31">
+
+
+        <li id="section-18">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>闭包，保存该链上的所有 <code>fail</code> 方法，用于夸链处理 error</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>      fail = [],</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-32">
+
+
+        <li id="section-19">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>闭包，链计数器，用于 debug 模式</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>      chain = <span class="hljs-number">0</span>;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-33">
+
+
+        <li id="section-20">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p>注入 defer，执行 fn，并返回新的 <strong>Then</strong> 对象</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">thenFactory</span><span class="hljs-params">(fn, context)</span> {</span>
       <span class="hljs-keyword">var</span> then = <span class="hljs-keyword">new</span> Then(),
-        defer = then._defer.bind(then);</pre></div></div>
-            
+        defer = bind(then._defer, then);</pre></div></div>
+
         </li>
-        
-        
-        <li id="section-34">
+
+
+        <li id="section-21">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>标记 defer，defer 作为 handler 时不会被注入 defer，见 <code>wrapTaskHandler</code></p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>      defer._self = then;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-35">
+
+
+        <li id="section-22">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>注入 defer</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>      fn(defer, context);</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-36">
+
+
+        <li id="section-23">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>检查上一链的结果是否处理，未处理则处理，用于续接 <strong>Then</strong> 链</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">if</span> (context &amp;&amp; context._result) context._defer.apply(context, context._result);
+
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">if</span> (context) {
+        context._nextDefer = defer;
+        <span class="hljs-keyword">if</span> (context._result) context._defer.apply(context, context._result);
+      }
       <span class="hljs-keyword">return</span> then;
     }
 
     prototype.constructor = Then;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-37">
+
+
+        <li id="section-24">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <p>是否开启 <strong>debug</strong> 模式，若开启，则将每一步的结果输入 <code>debug</code> 方法</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (!debug || isFunction(debug)) prototype.debug = debug;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-38">
+
+
+        <li id="section-25">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>all</strong> 方法</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    prototype.all = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(allHandler)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
         self._all = wrapTaskHandler(defer, allHandler);
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-39">
+
+
+        <li id="section-26">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>then</strong> 方法</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    prototype.then = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(successHandler, errorHandler)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
         self._success = wrapTaskHandler(defer, successHandler);
         self._error = wrapTaskHandler(defer, errorHandler);
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-40">
+
+
+        <li id="section-27">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>fail</strong> 方法</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    prototype.fail = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(errorHandler)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
         self._fail = wrapTaskHandler(defer, errorHandler);</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-41">
+
+
+        <li id="section-28">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <p>对于链上的 fail 方法，如果无 error ，则穿透该链，将上一部结果输入下一链</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>        self._success = defer.bind(<span class="hljs-literal">null</span>, <span class="hljs-literal">null</span>);
+
+            <div class="content"><div class='highlight'><pre>        self._success = bind(defer, <span class="hljs-literal">null</span>, <span class="hljs-literal">null</span>);
         self._success._self = defer._self;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-42">
+
+
+        <li id="section-29">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>将 fail 存入闭包，使得在此链之前产生的 error 也能被 fail 捕捉</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">if</span> (self._fail) fail.push(self._fail);
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-43">
+
+
+        <li id="section-30">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>each</strong> 方法</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    prototype.each = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator, context)</span> {</span>
+
+            <div class="content"><div class='highlight'><pre>    prototype.each = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
-        self._each = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dIterator, dContext)</span> {</span></pre></div></div>
-            
+        self._each = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dIterator)</span> {</span></pre></div></div>
+
         </li>
-        
-        
-        <li id="section-44">
+
+
+        <li id="section-31">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-44">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
-<code>dArray</code>, <code>dIterator</code>, <code>dContext</code> 来自于上一链的 <strong>defer</strong></p>
+<code>dArray</code>, <code>dIterator</code> 来自于上一链的 <strong>defer</strong>
+下同</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>          each(defer, array || dArray, iterator || dIterator, context || dContext);
+
+            <div class="content"><div class='highlight'><pre>          each(defer, array || dArray, iterator || dIterator);
         };
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-45">
+
+
+        <li id="section-32">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-45">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>eachSeries</strong> 方法</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    prototype.eachSeries = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator, context)</span> {</span>
+
+            <div class="content"><div class='highlight'><pre>    prototype.eachSeries = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
-        self._eachSeries = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dIterator, dContext)</span> {</span>
-          eachSeries(defer, array || dArray, iterator || dIterator, context || dContext);
+        self._eachSeries = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dIterator)</span> {</span>
+          eachSeries(defer, array || dArray, iterator || dIterator);
         };
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-46">
+
+
+        <li id="section-33">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-46">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>parallel</strong> 方法</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    prototype.parallel = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, context)</span> {</span>
+
+            <div class="content"><div class='highlight'><pre>    prototype.parallel = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
-        self._parallel = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dContext)</span> {</span>
-          parallel(defer, array || dArray, context || dContext);
+        self._parallel = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray)</span> {</span>
+          parallel(defer, array || dArray);
         };
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-47">
+
+
+        <li id="section-34">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-47">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p><strong>Then</strong> 对象上的 <strong>series</strong> 方法</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>    prototype.series = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, context)</span> {</span>
+
+            <div class="content"><div class='highlight'><pre>    prototype.series = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array)</span> {</span>
       <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer, self)</span> {</span>
-        self._series = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray, dContext)</span> {</span>
-          series(defer, array || dArray, context || dContext);
+        self._series = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dArray)</span> {</span>
+          series(defer, array || dArray);
         };
       }, <span class="hljs-keyword">this</span>);
     };</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-48">
+
+
+        <li id="section-35">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-48">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>核心 <strong>defer</strong> 方法
 <strong>defer</strong> 收集任务结果，触发下一个链接，它被注入各个 handler，不应该直接调用
 其参数采用 <strong>node.js</strong> 的 <strong>callback</strong> 形式：(error, value1, value2, …)</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>    prototype._defer = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err)</span> {</span>
       <span class="hljs-keyword">var</span> allHandler, errorHandler, successHandler, self = <span class="hljs-keyword">this</span>, args = <span class="hljs-built_in">arguments</span>;</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-49">
+
+
+        <li id="section-36">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-49">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>then链上的结果已经处理，若重复执行 defer 则直接跳过；</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">if</span> (self._result === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span>;
       <span class="hljs-keyword">if</span> (self._result) {</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-50">
+
+
+        <li id="section-37">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-50">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>_result 已存在，表明上一次 defer 没有 handler 处理
 这是第二次进入 defer 继续处理，并标记结果已处理，这是由续接 <strong>Then</strong> 链触发</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>        self._result = <span class="hljs-literal">false</span>;
       } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (self.debug) {</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-51">
+
+
+        <li id="section-38">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p>表明这是第一次进入 defer，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>        chain += <span class="hljs-number">1</span>;
         self.debug.apply(self.debug, [<span class="hljs-string">'\nResult of chain '</span> + chain + <span class="hljs-string">': '</span>].concat(slice.call(args)));
       }
@@ -952,75 +780,91 @@
         <span class="hljs-keyword">if</span> (successHandler) {
           successHandler.apply(successHandler._self, slice.call(args, <span class="hljs-number">1</span>));
         } <span class="hljs-keyword">else</span> {</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-52">
+
+
+        <li id="section-39">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>对于正确结果，<strong>Then</strong> 链上没有相应 handler 处理，则在 <strong>Then</strong> 链上保存结果，等待下一次处理。</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>          self._result = args;
         }
       }
 
       <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">dealError</span><span class="hljs-params">(error)</span> {</span>
         error.stack = error.stack || error.description;
-        <span class="hljs-keyword">if</span> (errorHandler || fail.length) {</pre></div></div>
-            
+        <span class="hljs-keyword">if</span> (isNull(err) &amp;&amp; self._nextDefer) {</pre></div></div>
+
         </li>
-        
-        
-        <li id="section-53">
+
+
+        <li id="section-40">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-53">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>本次 defer catch的 error，直接放到下一链处理</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>          self._nextDefer(error);
+        } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (errorHandler || fail.length) {</pre></div></div>
+
+        </li>
+
+
+        <li id="section-41">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>获取本链的 error handler 或者链上的fail handler</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>          errorHandler = errorHandler || fail.shift();
           errorHandler.call(errorHandler._self, error);
         } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isFunction(thenjs.onerror)) {</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-54">
+
+
+        <li id="section-42">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-54">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>如果定义了全局 <strong>onerror</strong>，则用它处理</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>          thenjs.onerror(error);
         } <span class="hljs-keyword">else</span> {</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-55">
+
+
+        <li id="section-43">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-55">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p>对于 error，<strong>Then</strong> 链上没有相应 handler 处理，则在 <strong>Then</strong> 链上保存结果，等待下一次处理。</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>          self._result = args;
+
+            <div class="content"><div class='highlight'><pre>          self._result = [error];
         }
       }
 
@@ -1033,68 +877,99 @@
 
     <span class="hljs-keyword">return</span> thenFactory;
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-56">
+
+
+        <li id="section-44">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-56">&#182;</a>
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>异步执行函数，同时捕捉错误，用 <code>defer</code> 处理。</p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">tryTask</span><span class="hljs-params">(defer, task)</span> {</span>
+    nextTick(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+      <span class="hljs-keyword">try</span> {
+        task();
+      } <span class="hljs-keyword">catch</span> (error) {
+        defer(error);
+      }
+    });
+  }</pre></div></div>
+
+        </li>
+
+
+        <li id="section-45">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
               </div>
               <p>工厂函数，生成 thenjs.each 和 thenjs.eachSeries</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">eachAndSeriesFactory</span><span class="hljs-params">(fn)</span> {</span>
-    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator, context, debug)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator, debug)</span> {</span>
       <span class="hljs-keyword">return</span> closureThen(debug)(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer)</span> {</span>
-        tryTask(defer, fn.bind(<span class="hljs-literal">null</span>, defer, array, iterator, context));
+        tryTask(defer, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+          <span class="hljs-keyword">return</span> fn(defer, array, iterator);
+        });
       });
     };
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-57">
+
+
+        <li id="section-46">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-57">&#182;</a>
+                <a class="pilcrow" href="#section-46">&#182;</a>
               </div>
               <p>工厂函数，生成 thenjs.parallel 和 thenjs.series</p>
 
             </div>
-            
+
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallelAndSeriesFactory</span><span class="hljs-params">(fn)</span> {</span>
-    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, context, debug)</span> {</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, debug)</span> {</span>
       <span class="hljs-keyword">return</span> closureThen(debug)(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer)</span> {</span>
-        tryTask(defer, fn.bind(<span class="hljs-literal">null</span>, defer, array, context));
+        tryTask(defer, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+          <span class="hljs-keyword">return</span> fn(defer, array);
+        });
       });
     };
   }</pre></div></div>
-            
+
         </li>
-        
-        
-        <li id="section-58">
+
+
+        <li id="section-47">
             <div class="annotation">
-              
+
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-58">&#182;</a>
+                <a class="pilcrow" href="#section-47">&#182;</a>
               </div>
               <p>对外输出的主函数</p>
 
             </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">thenjs</span><span class="hljs-params">(startFn, context, debug)</span> {</span>
+
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">thenjs</span><span class="hljs-params">(startFn, debug)</span> {</span>
     <span class="hljs-keyword">return</span> closureThen(debug)(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(defer)</span> {</span>
-      tryTask(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
+      tryTask(defer, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+        <span class="hljs-keyword">return</span> isFunction(startFn) ? startFn(defer) : defer();
+      });
     });
   }
+
   thenjs.constructor = Thenjs;
+  thenjs.nextTick = nextTick;
   thenjs.each = eachAndSeriesFactory(each);
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
   thenjs.parallel = parallelAndSeriesFactory(parallel);
@@ -1105,12 +980,12 @@
   } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> define === <span class="hljs-string">'function'</span> &amp;&amp; define.amd) {
     define([], <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span><span class="hljs-keyword">return</span> thenjs;});
   } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> window === <span class="hljs-string">'object'</span>) {
-    window.then = thenjs;
+    window.thenjs = thenjs;
   }
 }());</pre></div></div>
-            
+
         </li>
-        
+
     </ul>
   </div>
 </body>
