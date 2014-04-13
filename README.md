@@ -1,6 +1,6 @@
 then.js 0.11.2[![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
-Another very small asynchronous promise tool!
+小巧、简单、强大的链式异步编程工具！
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
@@ -16,19 +16,14 @@ Another very small asynchronous promise tool!
 6. then链续接，当一条then链的所有任务运行完毕之后，还可以在其后继续追加then链，前面运行的结果能进入续接的then链继续处理。
 
 ##Benchmark
-each、eachSeries、parallel、series长度100各跑一次`node test/benchmark.js`：
+each、eachSeries、parallel、series长度10000各跑1000次`node test/benchmark.js`：
 
-###异步任务，基本一致：
+###异步任务，thenjs 略胜：
 
-**then.js:** 0.32 ops/sec ±0.59% (6 runs sampled)
+async : 1000 loops, 23.853 ms/loop, 41.92 ops/sec.
+thenjs : 1000 loops, 22.718 ms/loop, 44.02 ops/sec.
 
-**async:** 0.32 ops/sec ±0.30% (6 runs sampled)
-
-###同步任务，基本一致：
-
-**then.js:** 68.13 ops/sec ±1.34% (29 runs sampled)
-
-**async:** 68.62 ops/sec ±0.88% (25 runs sampled)
+同步任务各有胜负，thenjs 内部将同步任务转成了异步， async 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
 
 ## Install
 
@@ -60,17 +55,19 @@ each、eachSeries、parallel、series长度100各跑一次`node test/benchmark.j
 
 ####入口函数：（return then对象）
 
-+ then([startHandler], [context], [debug])
++ then([startHandler], [debug])
 
-+ then.each(array, iterator, [context], [debug])
++ then.each(array, iterator, [debug])
 
-+ then.eachSeries(array, iterator, [context], [debug])
++ then.eachSeries(array, iterator, [debug])
 
-+ then.parallel(taskFnArray, [context], [debug])
++ then.parallel(taskFnArray, [debug])
 
-+ then.series(taskFnArray, [context], [debug])
++ then.series(taskFnArray, [debug])
 
-+ then.onerror(errorHandler)
++ then.onerror(errorHandler) (无返回)
+
++ then.nextTick(fn) (无返回)
 
 ####then对象方法：（return then对象）
 
@@ -80,17 +77,17 @@ each、eachSeries、parallel、series长度100各跑一次`node test/benchmark.j
 
 + .fail(errorHandler)
 
-+ .each(array, iterator, [context])
++ .each(array, iterator)
 
-+ .eachSeries(array, iterator, [context])
++ .eachSeries(array, iterator)
 
-+ .parallel(taskFnArray, [context])
++ .parallel(taskFnArray)
 
-+ .series(taskFnArray, [context])
++ .series(taskFnArray)
 
 ### 1. 入口函数
 
-#### then([startHandler], [context], [debug])
+#### then([startHandler], [debug])
 startHandler是可选的，如果未提供，将直接进入下一个then object。
 
 ***Parameters:***
@@ -101,7 +98,7 @@ startHandler是可选的，如果未提供，将直接进入下一个then object
 
 ***Return:*** then object
 
-#### then.each(array, iterator, [context], [debug])
+#### then.each(array, iterator, [debug])
 将array中的值应用于iterator函数（同步或异步任务），并行执行。iterator的第一个参数defer用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与array对应。当所有iterator任务运行完毕，或者defer捕捉到任何一个err，即进入下一个then object。如果array为空数组，结果数组也将为空数组，iterator不会执行而直接进入下一个then object。
 
 ***Parameters:***
@@ -112,7 +109,7 @@ startHandler是可选的，如果未提供，将直接进入下一个then object
 
 ***Return:*** then object
 
-#### then.eachSeries(array, iterator, [context], [debug])
+#### then.eachSeries(array, iterator, [debug])
 将array中的值应用于iterator函数（同步或异步任务），按顺序执行，上一个任务执行完毕才开始执行下一个任务。iterator的第一个参数defer用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与array对应。当所有iterator任务运行完毕，或者defer捕捉到任何一个err，即进入下一个then object。如果array为空数组，结果数组也将为空数组，iterator不会执行而直接进入下一个then object。
 
 ***Parameters:***
@@ -124,7 +121,7 @@ startHandler是可选的，如果未提供，将直接进入下一个then object
 ***Return:*** then object
 
 
-#### then.parallel(taskFnArray, [context], [debug])
+#### then.parallel(taskFnArray, [debug])
 taskFnArray是一系列同步或异步任务函数组成的数组，并行执行。taskFnArray中每一个函数的第一个参数defer用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与taskFnArray对应。当所有taskFnArray任务运行完毕，或者defer捕捉了任何一个err，即进入下一个then object。如果taskFnArray为空数组，结果数组也将为空数组，将会直接进入下一个then object。
 
 ***Parameters:***
@@ -135,7 +132,7 @@ taskFnArray是一系列同步或异步任务函数组成的数组，并行执行
 
 ***Return:*** then object
 
-#### then.series(taskFnArray, [context], [debug])
+#### then.series(taskFnArray, [debug])
 taskFnArray是一系列同步或异步任务函数组成的数组，按顺序执行，上一个任务执行完毕才开始执行下一个任务。taskFnArray中每一个函数的有第一个参数defer用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与taskFnArray对应。当所有taskFnArray任务运行完毕，或者defer捕捉了任何一个err，即进入下一个then object。如果taskFnArray为空数组，结果数组也将为空数组，将会直接进入下一个then object。
 
 ***Parameters:***
@@ -177,16 +174,16 @@ fail用于捕捉在它之前的then链上发生的任何err。若fail存在，fa
 
 ***Return:*** then object
 
-#### .each(array, iterator, [context])
+#### .each(array, iterator)
 参数类似then.each。不同在于，一是无debug参数; 当array, iterator, context为null或undefined时，此处的each会查找上一个then对象的输出结果，如果存在，则作为它的运行参数：例如上一个then对象输出`defer(null, array1, iterator1)`，此处为`each(null, null, this)`，则该each会获取array1, iterator1作为为它的参数运行。
 
-#### .eachSeries(array, iterator, [context])
+#### .eachSeries(array, iterator)
 参数类似then.eachSeries。不同处类似上面.each。
 
-#### .parallel(taskFnArray, [context])
+#### .parallel(taskFnArray)
 参数类似then.eachSeries。不同处类似上面.each。
 
-#### .series(taskFnArray, [context])
+#### .series(taskFnArray)
 参数类似then.eachSeries。不同处类似上面.each。
 
 ### 3. 其他说明

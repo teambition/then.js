@@ -18,7 +18,7 @@ function asnycTask() {
     var callback = arguments[arguments.length - 1],
         result = [].slice.call(arguments, 0, -1);
     setTimeout(function () {
-        callback.apply(callback.nextThenObject, result);
+        callback.apply(callback._self, result);
     }, 0);
 }
 

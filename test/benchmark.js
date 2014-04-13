@@ -2,42 +2,45 @@
 /*global console*/
 
 var async = require('async'),
-  Benchmark = require('benchmark'),
-  thenjs = require('../then.js'),
-  suite = new Benchmark.Suite();
+  thenjs = require('../then.js');
 
-var list = [], tasks = [];
+var loops = [], list = [], tasks = [];
 
 function task(callback) {
-  callback(null, 1);
+  // 模拟同步任务
+  // callback(null, 1);
   // 模拟异步任务
-  // setTimeout(function () {
-  //   callback(null, 1);
-  // }, 4);
+  thenjs.nextTick(function () {
+    callback(null, 1);
+  });
 }
 
-for (var i = 0; i < 100; i++) {
+for (var i = 0; i < 1000; i++) {
   list[i] = i;
   tasks[i] = task;
 }
+for (var i = 0; i < 1000; i++) {
+  loops[i] = i;
+}
 
-function eachAsync(deferred) {
+function eachAsync(callback) {
   async.each(list, function (i, next) {
     task(next);
-  }, function () {
+  }, function (err) {
+    if (err) return callback(err);
     async.eachSeries(list, function (i, next) {
       task(next);
-    }, function () {
-      async.series(tasks, function () {
-        async.parallel(tasks, function (error, result) {
-          deferred.resolve();
-        });
+    }, function (err) {
+      if (err) return callback(err);
+      async.series(tasks, function (err) {
+        if (err) return callback(err);
+        async.parallel(tasks, callback);
       });
     });
   });
 }
 
-function eachThen(deferred) {
+function eachThen(callback) {
   thenjs.each(list, function (defer, i) {
     task(defer);
   })
@@ -46,22 +49,54 @@ function eachThen(deferred) {
   })
   .series(tasks)
   .parallel(tasks)
-  .all(function (defer, error, result) {
-    deferred.resolve();
+  .then(function (defer, result) {
+    callback(null, result);
+  }).fail(function (defer, error) {
+    callback(error);
   });
 }
 
-suite.add('Thenjs', function (deferred) {
-  eachThen(deferred);
-}, {
-  defer: true
-}).add('Async', function (deferred) {
-  eachAsync(deferred);
-}, {
-  defer: true
-}).on('cycle', function (e) {
-  console.log(String(e.target));
-}).on('complete', function () {
-  var fast = this.filter('fastest').pluck('name');
-  console.log("Fastest is " + fast);
-}).run({async: true});
+var asyncTime = 0, thenjsTime = 0;
+
+function genResult(name, time) {
+  if (!time) return;
+  var length = loops.length,
+    ms = time / length,
+    ops = 1000 / ms;
+  console.log(name + ' : ' + length + ' loops, ' + ms + ' ms/loop, ' + ops.toFixed(2) + ' ops/sec.');
+}
+
+thenjs(function(defer) {
+  console.log('async begin:');
+  asyncTime = Date.now();
+  defer();
+})
+.eachSeries(loops, function (defer, i) {
+  console.log(i);
+  eachAsync(defer);
+})
+.all(function (defer, error, result) {
+  if (error) {
+    console.error('async error: ', error);
+    asyncTime = 0;
+  } else {
+    asyncTime = Date.now() - asyncTime;
+  }
+  console.log('thenjs begin:');
+  thenjsTime = Date.now();
+  defer();
+})
+.eachSeries(loops, function (defer, i) {
+  console.log(i);
+  eachThen(defer);
+})
+.all(function (defer, error, result) {
+  if (error) {
+    console.error('thenjs error: ', error);
+    thenjsTime = 0;
+  } else {
+    thenjsTime = Date.now() - thenjsTime;
+  }
+  genResult('async', asyncTime);
+  genResult('thenjs', thenjsTime);
+});

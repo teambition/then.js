@@ -1,4 +1,4 @@
-// v0.11.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.12.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -7,22 +7,44 @@
 // **License:** MIT
 
 'use strict';
-/* global module, define, process, console */
+/* global module, define, setImmediate, console, MutationObserver, MessageChannel */
 (function () {
   var slice = [].slice,
-    nextTick = typeof process === 'object' && process.nextTick ? process.nextTick : setTimeout,
+    // nextTick 用于异步执行函数，避免 `Maximum call stack size exceeded`
+    nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
+      setTimeout(fn, 0);
+    },
     // 兼容 ES3 的 `isArray`
     isArray = Array.isArray || function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
 
-  // 兼容 ES3 的 `bind`
-  if (!Function.prototype.bind) {
-    Function.prototype.bind = function (context) {
-      var self = this, args = slice.call(arguments, 1);
-      return function () {
-        return self.apply(context, args.concat(slice.call(arguments)));
+  // 浏览器端的 setImmediate
+  if (typeof MutationObserver === 'function') {
+    nextTick = function (fn) {
+      var element = document.createElement('div'),
+        observer = new MutationObserver(function () {
+          observer.disconnect();
+          return fn();
+        });
+      observer.observe(element, {attributes: true});
+      element.setAttribute('id', 1);
+    };
+  } else if (typeof MessageChannel === 'function') {
+    nextTick = function (fn) {
+      var channel = new MessageChannel();
+      channel.port1.onmessage = function () {
+        return fn();
       };
+      channel.port2.postMessage(0);
+    };
+  }
+
+  // 内部 `bind` 实现，比原生 `bind` 快！
+  function bind(fn, context) {
+    var args = slice.call(arguments, 2);
+    return function () {
+      return fn.apply(context, args.concat(slice.call(arguments)));
     };
   }
 
@@ -40,134 +62,98 @@
     return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" is not a ' + type + '!');
   }
 
+  // 用于生成 `each` 和 `parallel` 的 `next`
+  function parallelNext(defer, result, counter, i) {
+    function next(error, value) {
+      if (!isNull(error)) return defer(error);
+      result[i] = value;
+      return --counter.i < 0 && defer(null, result);
+    }
+    next._self = true;
+    return next;
+  }
+
   // ##内部 **each** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，并行执行，`defer` 处理最后结果
-  function each(defer, array, iterator, context) {
-    var end, count, _next, result = [];
-
-    // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
-    function next(index, error, value) {
-      if (!isNull(error)) return defer(error);
-
-      // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
-      result[index] = arguments.length > 3 ? slice.call(arguments, 2) : value;
-      count -= 1;
-      return count < 0 && defer(null, result);
-    }
+  function each(defer, array, iterator) {
+    var end, result = [], counter = {};
 
     if (!isArray(array)) return defer(errorify(array, 'each'));
-    count = end = array.length - 1;
-    // 如果数组为空，直接 `defer(null, [])`
+    counter.i = end = array.length - 1;
     if (end < 0) return defer(null, result);
-    // 并行执行所有任务
+
     for (var i = 0; i <= end; i++) {
-      _next = next.bind(null, i);
-      _next._self = true;
-      iterator.call(context, _next, array[i], i, array);
+      iterator(parallelNext(defer, result, counter, i), array[i], i, array);
+    }
+  }
+
+  // ##内部 **parallel** 函数
+  // 并行执行一组 `array` 任务，`defer` 处理最后结果
+  function parallel(defer, array) {
+    var end, result = [], counter = {};
+
+    if (!isArray(array)) return defer(errorify(array, 'parallel'));
+    counter.i = end = array.length - 1;
+    if (end < 0) return defer(null, result);
+
+    for (var i = 0; i <= end; i++) {
+      array[i](parallelNext(defer, result, counter, i), i, array);
     }
   }
 
   // ##内部 **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`defer` 处理最后结果
-  function eachSeries(defer, array, iterator, context) {
+  function eachSeries(defer, array, iterator) {
     var i = 0, end, result = [];
 
-    // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(err, value) {
       if (!isNull(err)) return defer(err);
-
-      // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
-      result[i] = arguments.length > 2 ? slice.call(arguments, 1) : value;
-      i += 1;
-      if (i > end) return defer(null, result);
+      result[i] = value;
+      if (++i > end) return defer(null, result);
       try {
-        iterator.call(context, next, array[i], i, array);
+        nextTick(function () {
+          iterator(next, array[i], i, array);
+        });
       } catch (error) {
         defer(error);
       }
     }
+    next._self = true;
 
     if (!isArray(array)) return defer(errorify(array, 'eachSeries'));
     end = array.length - 1;
-    // 如果数组为空，直接 `defer(null, [])`
     if (end < 0) return defer(null, result);
-    next._self = true;
-    // 执行第一个任务
-    iterator.call(context, next, array[i], i, array);
-  }
-
-  // ##内部 **parallel** 函数
-  // 并行执行一组 `array` 任务，`defer` 处理最后结果
-  function parallel(defer, array, context) {
-    var end, count, _next, task, result = [];
-
-    // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
-    function next(index, error, value) {
-      if (!isNull(error)) return defer(error);
-
-      // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
-      result[index] = arguments.length > 3 ? slice.call(arguments, 2) : value;
-      count -= 1;
-      return count < 0 && defer(null, result);
-    }
-
-    if (!isArray(array)) return defer(errorify(array, 'parallel'));
-    count = end = array.length - 1;
-    // 如果数组为空，直接 `defer(null, [])`
-    if (end < 0) return defer(null, result);
-    // 并行执行所有任务
-    for (var i = 0; i <= end; i++) {
-      task = array[i];
-      _next = next.bind(null, i);
-      _next._self = true;
-      task.call(context, _next, i, array);
-    }
+    iterator(next, array[i], i, array);
   }
 
   // ##内部 **series** 函数
   // 串行执行一组 `array` 任务，`defer` 处理最后结果
-  function series(defer, array, context) {
-    var i = 0, end, task, result = [];
+  function series(defer, array) {
+    var i = 0, end, result = [];
 
-    // 注入任务函数的 'defer'，用于收集处理任务结果，如果出现 `error` ，立即 `defer` 处理
     function next(err, value) {
       if (!isNull(err)) return defer(err);
-
-      // 按照原数组顺序收集各个任务结果，如果结果为2个以上，则转成数组
-      result[i] = arguments.length > 2 ? slice.call(arguments, 1) : value;
-      i += 1;
-      if (i > end) return defer(null, result);
-      task = array[i];
+      result[i] = value;
+      if (++i > end) return defer(null, result);
       try {
-        task.call(context, next, i, array);
+        nextTick(function () {
+          array[i](next, i, array);
+        });
       } catch (error) {
         defer(error);
       }
     }
+    next._self = true;
 
     if (!isArray(array)) return defer(errorify(array, 'series'));
     end = array.length - 1;
-    // 如果数组为空，直接 `defer(null, [])`
     if (end < 0) return defer(null, result);
-    task = array[i];
-    next._self = true;
-    return task.call(context, next, i, array);
-  }
-
-  // 异步执行函数，用于确保整条链生成后才开始执行第一个任务，如果出错，则 `defer` 处理。
-  function tryTask(defer, task) {
-    nextTick(function () {
-      try {
-        task();
-      } catch (error) {
-        defer(error);
-      }
-    });
+    array[i](next, i, array);
   }
 
   // 封装 handler，`_self` 属性判定 handler 不是 `defer` ，不是则将 `defer` 注入成第一个参数
   function wrapTaskHandler(defer, handler) {
-    return isFunction(handler) ? handler._self ? handler : handler.bind(null, defer) : null;
+    return isFunction(handler) ? handler._self ? handler : bind(handler, null, defer) : null;
   }
 
   // ##内部 **Thenjs** 构造函数
@@ -196,14 +182,17 @@
     // 注入 defer，执行 fn，并返回新的 **Then** 对象
     function thenFactory(fn, context) {
       var then = new Then(),
-        defer = then._defer.bind(then);
+        defer = bind(then._defer, then);
 
       // 标记 defer，defer 作为 handler 时不会被注入 defer，见 `wrapTaskHandler`
       defer._self = then;
       // 注入 defer
       fn(defer, context);
       // 检查上一链的结果是否处理，未处理则处理，用于续接 **Then** 链
-      if (context && context._result) context._defer.apply(context, context._result);
+      if (context) {
+        context._nextDefer = defer;
+        if (context._result) context._defer.apply(context, context._result);
+      }
       return then;
     }
 
@@ -232,7 +221,7 @@
       return thenFactory(function (defer, self) {
         self._fail = wrapTaskHandler(defer, errorHandler);
         // 对于链上的 fail 方法，如果无 error ，则穿透该链，将上一部结果输入下一链
-        self._success = defer.bind(null, null);
+        self._success = bind(defer, null, null);
         self._success._self = defer._self;
         // 将 fail 存入闭包，使得在此链之前产生的 error 也能被 fail 捕捉
         if (self._fail) fail.push(self._fail);
@@ -240,39 +229,40 @@
     };
 
     // **Then** 对象上的 **each** 方法
-    prototype.each = function (array, iterator, context) {
+    prototype.each = function (array, iterator) {
       return thenFactory(function (defer, self) {
-        self._each = function (dArray, dIterator, dContext) {
+        self._each = function (dArray, dIterator) {
           // 优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
-          // `dArray`, `dIterator`, `dContext` 来自于上一链的 **defer**
-          each(defer, array || dArray, iterator || dIterator, context || dContext);
+          // `dArray`, `dIterator` 来自于上一链的 **defer**
+          // 下同
+          each(defer, array || dArray, iterator || dIterator);
         };
       }, this);
     };
 
     // **Then** 对象上的 **eachSeries** 方法
-    prototype.eachSeries = function (array, iterator, context) {
+    prototype.eachSeries = function (array, iterator) {
       return thenFactory(function (defer, self) {
-        self._eachSeries = function (dArray, dIterator, dContext) {
-          eachSeries(defer, array || dArray, iterator || dIterator, context || dContext);
+        self._eachSeries = function (dArray, dIterator) {
+          eachSeries(defer, array || dArray, iterator || dIterator);
         };
       }, this);
     };
 
     // **Then** 对象上的 **parallel** 方法
-    prototype.parallel = function (array, context) {
+    prototype.parallel = function (array) {
       return thenFactory(function (defer, self) {
-        self._parallel = function (dArray, dContext) {
-          parallel(defer, array || dArray, context || dContext);
+        self._parallel = function (dArray) {
+          parallel(defer, array || dArray);
         };
       }, this);
     };
 
     // **Then** 对象上的 **series** 方法
-    prototype.series = function (array, context) {
+    prototype.series = function (array) {
       return thenFactory(function (defer, self) {
-        self._series = function (dArray, dContext) {
-          series(defer, array || dArray, context || dContext);
+        self._series = function (dArray) {
+          series(defer, array || dArray);
         };
       }, this);
     };
@@ -312,7 +302,10 @@
 
       function dealError(error) {
         error.stack = error.stack || error.description;
-        if (errorHandler || fail.length) {
+        if (isNull(err) && self._nextDefer) {
+          // 本次 defer catch的 error，直接放到下一链处理
+          self._nextDefer(error);
+        } else if (errorHandler || fail.length) {
           // 获取本链的 error handler 或者链上的fail handler
           errorHandler = errorHandler || fail.shift();
           errorHandler.call(errorHandler._self, error);
@@ -321,7 +314,7 @@
           thenjs.onerror(error);
         } else {
           // 对于 error，**Then** 链上没有相应 handler 处理，则在 **Then** 链上保存结果，等待下一次处理。
-          self._result = args;
+          self._result = [error];
         }
       }
 
@@ -335,11 +328,24 @@
     return thenFactory;
   }
 
+  // 异步执行函数，同时捕捉错误，用 `defer` 处理。
+  function tryTask(defer, task) {
+    nextTick(function () {
+      try {
+        task();
+      } catch (error) {
+        defer(error);
+      }
+    });
+  }
+
   // 工厂函数，生成 thenjs.each 和 thenjs.eachSeries
   function eachAndSeriesFactory(fn) {
-    return function (array, iterator, context, debug) {
+    return function (array, iterator, debug) {
       return closureThen(debug)(function (defer) {
-        tryTask(defer, fn.bind(null, defer, array, iterator, context));
+        tryTask(defer, function () {
+          return fn(defer, array, iterator);
+        });
       });
     };
   }
@@ -347,20 +353,26 @@
 
   // 工厂函数，生成 thenjs.parallel 和 thenjs.series
   function parallelAndSeriesFactory(fn) {
-    return function (array, context, debug) {
+    return function (array, debug) {
       return closureThen(debug)(function (defer) {
-        tryTask(defer, fn.bind(null, defer, array, context));
+        tryTask(defer, function () {
+          return fn(defer, array);
+        });
       });
     };
   }
 
   // 对外输出的主函数
-  function thenjs(startFn, context, debug) {
+  function thenjs(startFn, debug) {
     return closureThen(debug)(function (defer) {
-      tryTask(defer, isFunction(startFn) ? startFn.bind(context, defer) : defer);
+      tryTask(defer, function () {
+        return isFunction(startFn) ? startFn(defer) : defer();
+      });
     });
   }
+
   thenjs.constructor = Thenjs;
+  thenjs.nextTick = nextTick;
   thenjs.each = eachAndSeriesFactory(each);
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
   thenjs.parallel = parallelAndSeriesFactory(parallel);
