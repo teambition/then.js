@@ -1,4 +1,4 @@
-// v0.12.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.12.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -6,39 +6,22 @@
 //
 // **License:** MIT
 
-'use strict';
 /* global module, define, setImmediate, console, MutationObserver, MessageChannel */
 (function () {
+  'use strict';
+
   var slice = [].slice,
     // nextTick 用于异步执行函数，避免 `Maximum call stack size exceeded`
-    nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
+    // MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, 无法正常 GC
+    nextTick = typeof setImmediate === 'function' ? function (fn) {
+      setImmediate(fn);
+    } : function (fn) {
       setTimeout(fn, 0);
     },
     // 兼容 ES3 的 `isArray`
     isArray = Array.isArray || function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
-
-  // 浏览器端的 setImmediate
-  if (typeof MutationObserver === 'function') {
-    nextTick = function (fn) {
-      var element = document.createElement('div'),
-        observer = new MutationObserver(function () {
-          observer.disconnect();
-          return fn();
-        });
-      observer.observe(element, {attributes: true});
-      element.setAttribute('id', 1);
-    };
-  } else if (typeof MessageChannel === 'function') {
-    nextTick = function (fn) {
-      var channel = new MessageChannel();
-      channel.port1.onmessage = function () {
-        return fn();
-      };
-      channel.port2.postMessage(0);
-    };
-  }
 
   // 内部 `bind` 实现，比原生 `bind` 快！
   function bind(fn, context) {
@@ -166,17 +149,17 @@
   };
 
   // ##内部 **Then** 构造函数
-  // 由闭包生成，每一条 **Then** 链的所有 **Then** 对象继承于共同的 **Then** 构造函数
+  // 每一条 **Then** 链的所有 **Then** 对象继承于共同的 **Then** 构造函数
   // 不同的 **Then** 链的 **Then** 构造函数不同，但都继承于 **Thenjs** 构造函数
   function closureThen(debug) {
 
-    // 闭包中新的 **Then** 构造函数
+    // 新的 **Then** 构造函数
     function Then() {}
     // 继承于 **Thenjs** 构造函数
     var prototype = Then.prototype = new Thenjs(),
-      // 闭包，保存该链上的所有 `fail` 方法，用于夸链处理 error
+      // 保存该链上的所有 `fail` 方法，用于夸链处理 error
       fail = [],
-      // 闭包，链计数器，用于 debug 模式
+      // 链计数器，用于 debug 模式
       chain = 0;
 
     // 注入 defer，执行 fn，并返回新的 **Then** 对象
@@ -188,9 +171,9 @@
       defer._self = then;
       // 注入 defer
       fn(defer, context);
-      // 检查上一链的结果是否处理，未处理则处理，用于续接 **Then** 链
       if (context) {
         context._nextDefer = defer;
+        // 检查上一链的结果是否处理，未处理则处理，用于续接 **Then** 链
         if (context._result) context._defer.apply(context, context._result);
       }
       return then;
@@ -371,7 +354,6 @@
     });
   }
 
-  thenjs.constructor = Thenjs;
   thenjs.nextTick = nextTick;
   thenjs.each = eachAndSeriesFactory(each);
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
