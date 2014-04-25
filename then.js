@@ -1,4 +1,4 @@
-// v0.12.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.12.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -6,19 +6,16 @@
 //
 // **License:** MIT
 
-/* global module, define, setImmediate, console, MutationObserver, MessageChannel */
+/* global module, define, setImmediate, console  */
 (function () {
   'use strict';
 
   var slice = [].slice,
     // nextTick 用于异步执行函数，避免 `Maximum call stack size exceeded`
     // MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, 无法正常 GC
-    nextTick = typeof setImmediate === 'function' ? function (fn) {
-      setImmediate(fn);
-    } : function (fn) {
+    nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
       setTimeout(fn, 0);
     },
-    // 兼容 ES3 的 `isArray`
     isArray = Array.isArray || function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
@@ -93,13 +90,13 @@
       if (!isNull(err)) return defer(err);
       result[i] = value;
       if (++i > end) return defer(null, result);
-      try {
-        nextTick(function () {
+      nextTick(function () {
+        try {
           iterator(next, array[i], i, array);
-        });
-      } catch (error) {
-        defer(error);
-      }
+        } catch (error) {
+          defer(error);
+        }
+      });
     }
     next._self = true;
 
@@ -118,13 +115,13 @@
       if (!isNull(err)) return defer(err);
       result[i] = value;
       if (++i > end) return defer(null, result);
-      try {
-        nextTick(function () {
+      nextTick(function () {
+        try {
           array[i](next, i, array);
-        });
-      } catch (error) {
-        defer(error);
-      }
+        } catch (error) {
+          defer(error);
+        }
+      });
     }
     next._self = true;
 
@@ -183,6 +180,8 @@
 
     // 是否开启 **debug** 模式，若开启，则将每一步的结果输入 `debug` 方法
     if (!debug || isFunction(debug)) prototype.debug = debug;
+
+    if (!isFunction(thenjs.onerror)) thenjs.onerror = null;
 
     // **Then** 对象上的 **all** 方法
     prototype.all = function (allHandler) {
@@ -251,7 +250,7 @@
     };
 
     // 核心 **defer** 方法
-    // **defer** 收集任务结果，触发下一个链接，它被注入各个 handler，不应该直接调用
+    // **defer** 收集任务结果，触发下一个链，它被注入各个 handler，不应该直接调用
     // 其参数采用 **node.js** 的 **callback** 形式：(error, value1, value2, ...)
     prototype._defer = function (err) {
       var allHandler, errorHandler, successHandler, self = this, args = arguments;
@@ -292,7 +291,7 @@
           // 获取本链的 error handler 或者链上的fail handler
           errorHandler = errorHandler || fail.shift();
           errorHandler.call(errorHandler._self, error);
-        } else if (isFunction(thenjs.onerror)) {
+        } else if (thenjs.onerror) {
           // 如果定义了全局 **onerror**，则用它处理
           thenjs.onerror(error);
         } else {
@@ -354,7 +353,9 @@
     });
   }
 
-  thenjs.nextTick = nextTick;
+  thenjs.nextTick = function (fn) {
+    nextTick(fn);
+  };
   thenjs.each = eachAndSeriesFactory(each);
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
   thenjs.parallel = parallelAndSeriesFactory(parallel);
