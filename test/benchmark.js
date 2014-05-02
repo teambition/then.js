@@ -41,17 +41,17 @@ function eachAsync(callback) {
 }
 
 function eachThen(callback) {
-  thenjs.each(list, function (defer, i) {
-    task(defer);
+  thenjs.each(list, function (cont, i) {
+    task(cont);
   })
-  .eachSeries(list, function (defer, i) {
-    task(defer);
+  .eachSeries(list, function (cont, i) {
+    task(cont);
   })
   .series(tasks)
   .parallel(tasks)
-  .then(function (defer, result) {
+  .then(function (cont, result) {
     callback(null, result);
-  }).fail(function (defer, error) {
+  }).fail(function (cont, error) {
     callback(error);
   });
 }
@@ -66,16 +66,16 @@ function genResult(name, time) {
   console.log(name + ' : ' + length + ' loops, ' + ms + ' ms/loop, ' + ops.toFixed(2) + ' ops/sec.');
 }
 
-thenjs(function(defer) {
+thenjs(function(cont) {
   console.log('async begin:');
   asyncTime = Date.now();
-  defer();
+  cont();
 })
-.eachSeries(loops, function (defer, i) {
-  console.log(i);
-  eachAsync(defer);
+.eachSeries(loops, function (cont, i) {
+  // console.log(i);
+  eachAsync(cont);
 })
-.all(function (defer, error, result) {
+.all(function (cont, error, result) {
   if (error) {
     console.error('async error: ', error);
     asyncTime = 0;
@@ -84,13 +84,13 @@ thenjs(function(defer) {
   }
   console.log('thenjs begin:');
   thenjsTime = Date.now();
-  defer();
+  cont();
 })
-.eachSeries(loops, function (defer, i) {
-  console.log(i);
-  eachThen(defer);
+.eachSeries(loops, function (cont, i) {
+  // console.log(i);
+  eachThen(cont);
 })
-.all(function (defer, error, result) {
+.all(function (cont, error, result) {
   if (error) {
     console.error('thenjs error: ', error);
     thenjsTime = 0;
