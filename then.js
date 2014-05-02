@@ -1,4 +1,4 @@
-// v0.12.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.12.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -6,30 +6,19 @@
 //
 // **License:** MIT
 
-/* global module, define, setImmediate, console, MutationObserver, MessageChannel */
+/* global module, define, setImmediate, console  */
 (function () {
   'use strict';
 
   var slice = [].slice,
     // nextTick 用于异步执行函数，避免 `Maximum call stack size exceeded`
     // MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, 无法正常 GC
-    nextTick = typeof setImmediate === 'function' ? function (fn) {
-      setImmediate(fn);
-    } : function (fn) {
+    nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
       setTimeout(fn, 0);
     },
-    // 兼容 ES3 的 `isArray`
     isArray = Array.isArray || function (obj) {
       return Object.prototype.toString.call(obj) === '[object Array]';
     };
-
-  // 内部 `bind` 实现，比原生 `bind` 快！
-  function bind(fn, context) {
-    var args = slice.call(arguments, 2);
-    return function () {
-      return fn.apply(context, args.concat(slice.call(arguments)));
-    };
-  }
 
   function isNull(obj) {
     return obj == null;
@@ -46,97 +35,99 @@
   }
 
   // 用于生成 `each` 和 `parallel` 的 `next`
-  function parallelNext(defer, result, counter, i) {
+  function parallelNext(cont, result, counter, i) {
     function next(error, value) {
-      if (!isNull(error)) return defer(error);
+      if (!isNull(error)) return cont(error);
       result[i] = value;
-      return --counter.i < 0 && defer(null, result);
+      return --counter.i < 0 && cont(null, result);
     }
-    next._self = true;
+    next._isCont = true;
     return next;
   }
 
   // ##内部 **each** 函数
-  // 将一组数据 `array` 分发给任务迭代函数 `iterator`，并行执行，`defer` 处理最后结果
-  function each(defer, array, iterator) {
+  // 将一组数据 `array` 分发给任务迭代函数 `iterator`，并行执行，`cont` 处理最后结果
+  function each(cont, array, iterator) {
     var end, result = [], counter = {};
 
-    if (!isArray(array)) return defer(errorify(array, 'each'));
+    if (!isArray(array)) return cont(errorify(array, 'each'));
     counter.i = end = array.length - 1;
-    if (end < 0) return defer(null, result);
+    if (end < 0) return cont(null, result);
 
     for (var i = 0; i <= end; i++) {
-      iterator(parallelNext(defer, result, counter, i), array[i], i, array);
+      iterator(parallelNext(cont, result, counter, i), array[i], i, array);
     }
   }
 
   // ##内部 **parallel** 函数
-  // 并行执行一组 `array` 任务，`defer` 处理最后结果
-  function parallel(defer, array) {
+  // 并行执行一组 `array` 任务，`cont` 处理最后结果
+  function parallel(cont, array) {
     var end, result = [], counter = {};
 
-    if (!isArray(array)) return defer(errorify(array, 'parallel'));
+    if (!isArray(array)) return cont(errorify(array, 'parallel'));
     counter.i = end = array.length - 1;
-    if (end < 0) return defer(null, result);
+    if (end < 0) return cont(null, result);
 
     for (var i = 0; i <= end; i++) {
-      array[i](parallelNext(defer, result, counter, i), i, array);
+      array[i](parallelNext(cont, result, counter, i), i, array);
     }
   }
 
   // ##内部 **eachSeries** 函数
-  // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`defer` 处理最后结果
-  function eachSeries(defer, array, iterator) {
+  // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`cont` 处理最后结果
+  function eachSeries(cont, array, iterator) {
     var i = 0, end, result = [];
 
     function next(err, value) {
-      if (!isNull(err)) return defer(err);
+      if (!isNull(err)) return cont(err);
       result[i] = value;
-      if (++i > end) return defer(null, result);
-      try {
-        nextTick(function () {
+      if (++i > end) return cont(null, result);
+      nextTick(function () {
+        try {
           iterator(next, array[i], i, array);
-        });
-      } catch (error) {
-        defer(error);
-      }
+        } catch (error) {
+          cont(error);
+        }
+      });
     }
-    next._self = true;
+    next._isCont = true;
 
-    if (!isArray(array)) return defer(errorify(array, 'eachSeries'));
+    if (!isArray(array)) return cont(errorify(array, 'eachSeries'));
     end = array.length - 1;
-    if (end < 0) return defer(null, result);
+    if (end < 0) return cont(null, result);
     iterator(next, array[i], i, array);
   }
 
   // ##内部 **series** 函数
-  // 串行执行一组 `array` 任务，`defer` 处理最后结果
-  function series(defer, array) {
+  // 串行执行一组 `array` 任务，`cont` 处理最后结果
+  function series(cont, array) {
     var i = 0, end, result = [];
 
     function next(err, value) {
-      if (!isNull(err)) return defer(err);
+      if (!isNull(err)) return cont(err);
       result[i] = value;
-      if (++i > end) return defer(null, result);
-      try {
-        nextTick(function () {
+      if (++i > end) return cont(null, result);
+      nextTick(function () {
+        try {
           array[i](next, i, array);
-        });
-      } catch (error) {
-        defer(error);
-      }
+        } catch (error) {
+          cont(error);
+        }
+      });
     }
-    next._self = true;
+    next._isCont = true;
 
-    if (!isArray(array)) return defer(errorify(array, 'series'));
+    if (!isArray(array)) return cont(errorify(array, 'series'));
     end = array.length - 1;
-    if (end < 0) return defer(null, result);
+    if (end < 0) return cont(null, result);
     array[i](next, i, array);
   }
 
-  // 封装 handler，`_self` 属性判定 handler 不是 `defer` ，不是则将 `defer` 注入成第一个参数
-  function wrapTaskHandler(defer, handler) {
-    return isFunction(handler) ? handler._self ? handler : bind(handler, null, defer) : null;
+  // 封装 handler，`_isCont` 属性判定 handler 是不是 `cont` ，不是则将 `cont` 注入成第一个参数
+  function wrapTaskHandler(cont, handler) {
+    return handler._isCont ? handler : function () {
+      handler.apply(null, [cont].concat(slice.call(arguments)));
+    };
   }
 
   // ##内部 **Thenjs** 构造函数
@@ -162,121 +153,32 @@
       // 链计数器，用于 debug 模式
       chain = 0;
 
-    // 注入 defer，执行 fn，并返回新的 **Then** 对象
-    function thenFactory(fn, context) {
-      var then = new Then(),
-        defer = bind(then._defer, then);
+    // 内部核心 **continuation** 方法
+    // **continuation** 收集任务结果，触发下一个链，它被注入各个 handler
+    // 其参数采用 **node.js** 的 **callback** 形式：(error, arg1, arg2, ...)
+    function continuation(err) {
+      var errorHandler, successHandler, self = this, args = arguments;
 
-      // 标记 defer，defer 作为 handler 时不会被注入 defer，见 `wrapTaskHandler`
-      defer._self = then;
-      // 注入 defer
-      fn(defer, context);
-      if (context) {
-        context._nextDefer = defer;
-        // 检查上一链的结果是否处理，未处理则处理，用于续接 **Then** 链
-        if (context._result) context._defer.apply(context, context._result);
-      }
-      return then;
-    }
-
-    prototype.constructor = Then;
-
-    // 是否开启 **debug** 模式，若开启，则将每一步的结果输入 `debug` 方法
-    if (!debug || isFunction(debug)) prototype.debug = debug;
-
-    // **Then** 对象上的 **all** 方法
-    prototype.all = function (allHandler) {
-      return thenFactory(function (defer, self) {
-        self._all = wrapTaskHandler(defer, allHandler);
-      }, this);
-    };
-
-    // **Then** 对象上的 **then** 方法
-    prototype.then = function (successHandler, errorHandler) {
-      return thenFactory(function (defer, self) {
-        self._success = wrapTaskHandler(defer, successHandler);
-        self._error = wrapTaskHandler(defer, errorHandler);
-      }, this);
-    };
-
-    // **Then** 对象上的 **fail** 方法
-    prototype.fail = function (errorHandler) {
-      return thenFactory(function (defer, self) {
-        self._fail = wrapTaskHandler(defer, errorHandler);
-        // 对于链上的 fail 方法，如果无 error ，则穿透该链，将上一部结果输入下一链
-        self._success = bind(defer, null, null);
-        self._success._self = defer._self;
-        // 将 fail 存入闭包，使得在此链之前产生的 error 也能被 fail 捕捉
-        if (self._fail) fail.push(self._fail);
-      }, this);
-    };
-
-    // **Then** 对象上的 **each** 方法
-    prototype.each = function (array, iterator) {
-      return thenFactory(function (defer, self) {
-        self._each = function (dArray, dIterator) {
-          // 优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
-          // `dArray`, `dIterator` 来自于上一链的 **defer**
-          // 下同
-          each(defer, array || dArray, iterator || dIterator);
-        };
-      }, this);
-    };
-
-    // **Then** 对象上的 **eachSeries** 方法
-    prototype.eachSeries = function (array, iterator) {
-      return thenFactory(function (defer, self) {
-        self._eachSeries = function (dArray, dIterator) {
-          eachSeries(defer, array || dArray, iterator || dIterator);
-        };
-      }, this);
-    };
-
-    // **Then** 对象上的 **parallel** 方法
-    prototype.parallel = function (array) {
-      return thenFactory(function (defer, self) {
-        self._parallel = function (dArray) {
-          parallel(defer, array || dArray);
-        };
-      }, this);
-    };
-
-    // **Then** 对象上的 **series** 方法
-    prototype.series = function (array) {
-      return thenFactory(function (defer, self) {
-        self._series = function (dArray) {
-          series(defer, array || dArray);
-        };
-      }, this);
-    };
-
-    // 核心 **defer** 方法
-    // **defer** 收集任务结果，触发下一个链接，它被注入各个 handler，不应该直接调用
-    // 其参数采用 **node.js** 的 **callback** 形式：(error, value1, value2, ...)
-    prototype._defer = function (err) {
-      var allHandler, errorHandler, successHandler, self = this, args = arguments;
-
-      // then链上的结果已经处理，若重复执行 defer 则直接跳过；
+      // then链上的结果已经处理，若重复执行 cont 则直接跳过；
       if (self._result === false) return;
       if (self._result) {
-        // _result 已存在，表明上一次 defer 没有 handler 处理
-        // 这是第二次进入 defer 继续处理，并标记结果已处理，这是由续接 **Then** 链触发
+        // _result 已存在，表明上一次 cont 没有 handler 处理
+        // 这是第二次进入 cont 继续处理，并标记结果已处理，这是由续接 **Then** 链触发
         self._result = false;
       } else if (self.debug) {
-        // 表明这是第一次进入 defer，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；
+        // 表明这是第一次进入 cont，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；
         chain += 1;
-        self.debug.apply(self.debug, ['\nResult of chain ' + chain + ': '].concat(slice.call(args)));
+        self.debug.apply(self, ['\nResult of chain ' + chain + ': '].concat(slice.call(args)));
       }
 
-      allHandler = self._all;
       errorHandler = self._fail ? fail.shift() : self._error;
       successHandler = self._success || self._each || self._eachSeries || self._parallel || self._series;
 
       function execute() {
-        if (allHandler) return allHandler.apply(allHandler._self, args);
+        if (self._all) return self._all.apply(null, args);
         if (!isNull(err)) throw err;
         if (successHandler) {
-          successHandler.apply(successHandler._self, slice.call(args, 1));
+          successHandler.apply(null, slice.call(args, 1));
         } else {
           // 对于正确结果，**Then** 链上没有相应 handler 处理，则在 **Then** 链上保存结果，等待下一次处理。
           self._result = args;
@@ -285,14 +187,14 @@
 
       function dealError(error) {
         error.stack = error.stack || error.description;
-        if (isNull(err) && self._nextDefer) {
-          // 本次 defer catch的 error，直接放到下一链处理
-          self._nextDefer(error);
+        if (isNull(err) && self._nextThen) {
+          // 本次 cont catch的 error，直接放到下一链处理
+          continuation.call(self._nextThen, error);
         } else if (errorHandler || fail.length) {
           // 获取本链的 error handler 或者链上的fail handler
           errorHandler = errorHandler || fail.shift();
-          errorHandler.call(errorHandler._self, error);
-        } else if (isFunction(thenjs.onerror)) {
+          errorHandler.call(null, error);
+        } else if (thenjs.onerror) {
           // 如果定义了全局 **onerror**，则用它处理
           thenjs.onerror(error);
         } else {
@@ -306,18 +208,116 @@
       } catch (error) {
         dealError(error);
       }
+    }
+
+    // 注入 cont，执行 fn，并返回新的 **Then** 对象
+    function thenFactory(fn, context) {
+      var then = new Then();
+
+      function cont() {
+        return continuation.apply(then, arguments);
+      }
+
+      // 标记 cont，cont 作为 handler 时不会被注入 cont，见 `wrapTaskHandler`
+      cont._isCont = true;
+      // 注入 cont
+      fn(cont, context);
+      if (context) {
+        context._nextThen = then;
+        // 检查上一链的结果是否处理，未处理则处理，用于续接 **Then** 链
+        if (context._result) {
+          nextTick(function () {
+            continuation.apply(context, context._result);
+          });
+        }
+      }
+      return then;
+    }
+
+    prototype.constructor = Then;
+
+    // 是否开启 **debug** 模式，若开启，则将每一步的结果输入 `debug` 方法
+    if (!debug || isFunction(debug)) prototype.debug = debug;
+
+    if (!isFunction(thenjs.onerror)) thenjs.onerror = null;
+
+    // **Then** 对象上的 **all** 方法
+    prototype.all = function (allHandler) {
+      return thenFactory(function (cont, self) {
+        self._all = wrapTaskHandler(cont, allHandler);
+      }, this);
+    };
+
+    // **Then** 对象上的 **then** 方法
+    prototype.then = function (successHandler, errorHandler) {
+      return thenFactory(function (cont, self) {
+        self._success = wrapTaskHandler(cont, successHandler);
+        self._error = errorHandler && wrapTaskHandler(cont, errorHandler);
+      }, this);
+    };
+
+    // **Then** 对象上的 **fail** 方法
+    prototype.fail = function (errorHandler) {
+      return thenFactory(function (cont, self) {
+        self._fail = wrapTaskHandler(cont, errorHandler);
+        // 对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链
+        self._success = function () {
+          cont.apply(null, [null].concat(slice.call(arguments)));
+        };
+        // 将 fail 存入闭包，使得在此链之前产生的 error 也能被 fail 捕捉
+        fail.push(self._fail);
+      }, this);
+    };
+
+    // **Then** 对象上的 **each** 方法
+    prototype.each = function (array, iterator) {
+      return thenFactory(function (cont, self) {
+        self._each = function (dArray, dIterator) {
+          // 优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
+          // `dArray`, `dIterator` 来自于上一链的 **cont**
+          // 下同
+          each(cont, array || dArray, iterator || dIterator);
+        };
+      }, this);
+    };
+
+    // **Then** 对象上的 **eachSeries** 方法
+    prototype.eachSeries = function (array, iterator) {
+      return thenFactory(function (cont, self) {
+        self._eachSeries = function (dArray, dIterator) {
+          eachSeries(cont, array || dArray, iterator || dIterator);
+        };
+      }, this);
+    };
+
+    // **Then** 对象上的 **parallel** 方法
+    prototype.parallel = function (array) {
+      return thenFactory(function (cont, self) {
+        self._parallel = function (dArray) {
+          parallel(cont, array || dArray);
+        };
+      }, this);
+    };
+
+    // **Then** 对象上的 **series** 方法
+    prototype.series = function (array) {
+      return thenFactory(function (cont, self) {
+        self._series = function (dArray) {
+          series(cont, array || dArray);
+        };
+      }, this);
     };
 
     return thenFactory;
   }
 
-  // 异步执行函数，同时捕捉错误，用 `defer` 处理。
-  function tryTask(defer, task) {
+  // 异步执行函数，同时捕捉错误，用 `cont` 处理。
+  function deferTask(task, cont, arg1, arg2) {
     nextTick(function () {
       try {
-        task();
+        task(cont, arg1, arg2);
       } catch (error) {
-        defer(error);
+        cont(error);
       }
     });
   }
@@ -325,36 +325,31 @@
   // 工厂函数，生成 thenjs.each 和 thenjs.eachSeries
   function eachAndSeriesFactory(fn) {
     return function (array, iterator, debug) {
-      return closureThen(debug)(function (defer) {
-        tryTask(defer, function () {
-          return fn(defer, array, iterator);
-        });
+      return closureThen(debug)(function (cont) {
+        deferTask(fn, cont, array, iterator);
       });
     };
   }
 
-
   // 工厂函数，生成 thenjs.parallel 和 thenjs.series
   function parallelAndSeriesFactory(fn) {
     return function (array, debug) {
-      return closureThen(debug)(function (defer) {
-        tryTask(defer, function () {
-          return fn(defer, array);
-        });
+      return closureThen(debug)(function (cont) {
+        deferTask(fn, cont, array);
       });
     };
   }
 
   // 对外输出的主函数
   function thenjs(startFn, debug) {
-    return closureThen(debug)(function (defer) {
-      tryTask(defer, function () {
-        return isFunction(startFn) ? startFn(defer) : defer();
-      });
+    return closureThen(debug)(function (cont) {
+      deferTask(startFn, cont);
     });
   }
 
-  thenjs.nextTick = nextTick;
+  thenjs.nextTick = function (fn) {
+    nextTick(fn);
+  };
   thenjs.each = eachAndSeriesFactory(each);
   thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
   thenjs.parallel = parallelAndSeriesFactory(parallel);
