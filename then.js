@@ -194,7 +194,7 @@
           // 获取本链的 error handler 或者链上的fail handler
           errorHandler = errorHandler || fail.shift();
           errorHandler.call(null, error);
-        } else if (thenjs.onerror) {
+        } else if (isFunction(thenjs.onerror)) {
           // 如果定义了全局 **onerror**，则用它处理
           thenjs.onerror(error);
         } else {
@@ -212,11 +212,10 @@
 
     // 注入 cont，执行 fn，并返回新的 **Then** 对象
     function thenFactory(fn, context) {
-      var then = new Then();
-
-      function cont() {
-        return continuation.apply(then, arguments);
-      }
+      var then = new Then(),
+        cont = function () {
+          return continuation.apply(then, arguments);
+        };
 
       // 标记 cont，cont 作为 handler 时不会被注入 cont，见 `wrapTaskHandler`
       cont._isCont = true;
@@ -235,11 +234,6 @@
     }
 
     prototype.constructor = Then;
-
-    // 是否开启 **debug** 模式，若开启，则将每一步的结果输入 `debug` 方法
-    if (!debug || isFunction(debug)) prototype.debug = debug;
-
-    if (!isFunction(thenjs.onerror)) thenjs.onerror = null;
 
     // **Then** 对象上的 **all** 方法
     prototype.all = function (allHandler) {
@@ -274,8 +268,7 @@
       return thenFactory(function (cont, self) {
         self._each = function (dArray, dIterator) {
           // 优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
-          // `dArray`, `dIterator` 来自于上一链的 **cont**
-          // 下同
+          // `dArray`, `dIterator` 来自于上一链的 **cont**，下同
           each(cont, array || dArray, iterator || dIterator);
         };
       }, this);
@@ -308,6 +301,8 @@
       }, this);
     };
 
+    // 是否开启 **debug** 模式，若开启，则将每一步的结果输入 `debug` 方法
+    if (!debug || isFunction(debug)) prototype.debug = debug;
     return thenFactory;
   }
 
@@ -322,24 +317,6 @@
     });
   }
 
-  // 工厂函数，生成 thenjs.each 和 thenjs.eachSeries
-  function eachAndSeriesFactory(fn) {
-    return function (array, iterator, debug) {
-      return closureThen(debug)(function (cont) {
-        deferTask(fn, cont, array, iterator);
-      });
-    };
-  }
-
-  // 工厂函数，生成 thenjs.parallel 和 thenjs.series
-  function parallelAndSeriesFactory(fn) {
-    return function (array, debug) {
-      return closureThen(debug)(function (cont) {
-        deferTask(fn, cont, array);
-      });
-    };
-  }
-
   // 对外输出的主函数
   function thenjs(startFn, debug) {
     return closureThen(debug)(function (cont) {
@@ -347,13 +324,29 @@
     });
   }
 
+  thenjs.each = function (array, iterator, debug) {
+    return closureThen(debug)(function (cont) {
+      deferTask(each, cont, array, iterator);
+    });
+  };
+  thenjs.eachSeries = function (array, iterator, debug) {
+    return closureThen(debug)(function (cont) {
+      deferTask(eachSeries, cont, array, iterator);
+    });
+  };
+  thenjs.parallel = function (array, debug) {
+    return closureThen(debug)(function (cont) {
+      deferTask(parallel, cont, array);
+    });
+  };
+  thenjs.series = function (array, debug) {
+    return closureThen(debug)(function (cont) {
+      deferTask(series, cont, array);
+    });
+  };
   thenjs.nextTick = function (fn) {
     nextTick(fn);
   };
-  thenjs.each = eachAndSeriesFactory(each);
-  thenjs.eachSeries = eachAndSeriesFactory(eachSeries);
-  thenjs.parallel = parallelAndSeriesFactory(parallel);
-  thenjs.series = parallelAndSeriesFactory(series);
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
