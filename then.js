@@ -34,6 +34,18 @@
     return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" is not a ' + type + '!');
   }
 
+  // 异步执行函数，同时捕捉异常
+  function defer(errorHandler, fn) {
+    var args = slice.call(arguments, 2);
+    nextTick(function () {
+      try {
+        fn.apply(null, args);
+      } catch (error) {
+        errorHandler(error);
+      }
+    });
+  }
+
   // 用于生成 `each` 和 `parallel` 的 `next`
   function parallelNext(cont, result, counter, i) {
     function next(error, value) {
@@ -82,13 +94,7 @@
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      nextTick(function () {
-        try {
-          iterator(next, array[i], i, array);
-        } catch (error) {
-          cont(error);
-        }
-      });
+      defer(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
 
@@ -107,13 +113,7 @@
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      nextTick(function () {
-        try {
-          array[i](next, i, array);
-        } catch (error) {
-          cont(error);
-        }
-      });
+      defer(cont, array[i], next, i, array);
     }
     next._isCont = true;
 
@@ -188,7 +188,7 @@
       function dealError(error) {
         error.stack = error.stack || error.description;
         if (isNull(err) && self._nextThen) {
-          // 本次 cont catch的 error，直接放到下一链处理
+          // 本次 cont 捕捉的 error，直接放到下一链处理
           continuation.call(self._nextThen, error);
         } else if (errorHandler || fail.length) {
           // 获取本链的 error handler 或者链上的fail handler
@@ -306,47 +306,37 @@
     return thenFactory;
   }
 
-  // 异步执行函数，同时捕捉错误，用 `cont` 处理。
-  function deferTask(task, cont, arg1, arg2) {
-    nextTick(function () {
-      try {
-        task(cont, arg1, arg2);
-      } catch (error) {
-        cont(error);
-      }
-    });
-  }
-
   // 对外输出的主函数
   function thenjs(startFn, debug) {
     return closureThen(debug)(function (cont) {
-      deferTask(startFn, cont);
+      defer(cont, startFn, cont);
     });
   }
 
   thenjs.each = function (array, iterator, debug) {
     return closureThen(debug)(function (cont) {
-      deferTask(each, cont, array, iterator);
+      defer(cont, each, cont, array, iterator);
     });
   };
   thenjs.eachSeries = function (array, iterator, debug) {
     return closureThen(debug)(function (cont) {
-      deferTask(eachSeries, cont, array, iterator);
+      defer(cont, eachSeries, cont, array, iterator);
     });
   };
   thenjs.parallel = function (array, debug) {
     return closureThen(debug)(function (cont) {
-      deferTask(parallel, cont, array);
+      defer(cont, parallel, cont, array);
     });
   };
   thenjs.series = function (array, debug) {
     return closureThen(debug)(function (cont) {
-      deferTask(series, cont, array);
+      defer(cont, series, cont, array);
     });
   };
   thenjs.nextTick = function (fn) {
     nextTick(fn);
   };
+  thenjs.defer = defer;
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
