@@ -10,7 +10,9 @@
   "keywords": [
     "promise",
     "then",
-    "async"
+    "async",
+    "then.js",
+    "thenjs"
   ],
   "license": "MIT",
   "ignore": [

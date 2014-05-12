@@ -13,11 +13,17 @@
   "homepage": "https://github.com/teambition/then.js",
   "keywords": [
     "promise",
-    "then"
+    "then",
+    "async",
+    "then.js",
+    "thenjs"
   ],
   "tags": [
     "promise",
-    "then"
+    "then",
+    "async",
+    "then.js",
+    "thenjs"
   ],
   "dependencies": {},
   "devDependencies": {

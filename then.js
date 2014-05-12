@@ -168,7 +168,7 @@
       } else if (self.debug) {
         // 表明这是第一次进入 cont，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；
         chain += 1;
-        self.debug.apply(self, ['\nResult of chain ' + chain + ': '].concat(slice.call(args)));
+        self.debug.apply(self, ['\nChain ' + chain + ': '].concat(slice.call(args)));
       }
 
       errorHandler = self._fail ? fail.shift() : self._error;
@@ -336,7 +336,6 @@
   thenjs.nextTick = function (fn) {
     nextTick(fn);
   };
-  thenjs.defer = defer;
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
