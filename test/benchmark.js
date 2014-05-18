@@ -8,18 +8,18 @@ var loops = [], list = [], tasks = [];
 
 function task(callback) {
   // 模拟同步任务
-  // callback(null, 1);
+  callback(null, 1);
   // 模拟异步任务
-  thenjs.nextTick(function () {
-    callback(null, 1);
-  });
+  // thenjs.nextTick(function () {
+  //   callback(null, 1);
+  // });
 }
 
 for (var i = 0; i < 10000; i++) {
   list[i] = i;
   tasks[i] = task;
 }
-for (var i = 0; i < 10; i++) {
+for (var i = 0; i < 100; i++) {
   loops[i] = i;
 }
 
@@ -73,7 +73,7 @@ thenjs(function(cont) {
 })
 .eachSeries(loops, function (cont, i) {
   // console.log(i);
-  eachAsync(cont);
+  thenjs.defer(cont, eachAsync, cont);
 })
 .all(function (cont, error, result) {
   if (error) {
@@ -88,7 +88,7 @@ thenjs(function(cont) {
 })
 .eachSeries(loops, function (cont, i) {
   // console.log(i);
-  eachThen(cont);
+  thenjs.defer(cont, eachThen, cont);
 })
 .all(function (cont, error, result) {
   if (error) {
