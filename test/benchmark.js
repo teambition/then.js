@@ -2,9 +2,10 @@
 /*global console*/
 
 var async = require('async'),
-  thenjs = require('../then.js');
+  thenjs = require('../then.js'),
+  Benchmark = require('jsbench');
 
-var loops = [], list = [], tasks = [];
+var list = [], tasks = [];
 
 function task(callback) {
   // 模拟同步任务
@@ -15,15 +16,16 @@ function task(callback) {
   });
 }
 
-for (var i = 0; i < 10000; i++) {
+// 构造任务流
+for (var i = 0; i < 1000; i++) {
   list[i] = i;
   tasks[i] = task;
 }
-for (var i = 0; i < 10; i++) {
-  loops[i] = i;
-}
 
-function eachAsync(callback) {
+var bench = new Benchmark();
+
+bench.add('async', function (callback) {
+  // async 测试主体
   async.each(list, function (i, next) {
     task(next);
   }, function (err) {
@@ -38,9 +40,8 @@ function eachAsync(callback) {
       });
     });
   });
-}
-
-function eachThen(callback) {
+}).add('thenjs', function (callback) {
+  // thenjs 测试主体
   thenjs.each(list, function (cont, i) {
     task(cont);
   })
@@ -54,49 +55,4 @@ function eachThen(callback) {
   }).fail(function (cont, error) {
     callback(error);
   });
-}
-
-var asyncTime = 0, thenjsTime = 0;
-
-function genResult(name, time) {
-  if (!time) return;
-  var length = loops.length,
-    ms = time / length,
-    ops = 1000 / ms;
-  console.log(name + ' : ' + length + ' loops, ' + ms + ' ms/loop, ' + ops.toFixed(2) + ' ops/sec.');
-}
-
-thenjs(function(cont) {
-  console.log('async begin:');
-  asyncTime = Date.now();
-  cont();
-})
-.eachSeries(loops, function (cont, i) {
-  // console.log(i);
-  eachAsync(cont);
-})
-.all(function (cont, error, result) {
-  if (error) {
-    console.error('async error: ', error);
-    asyncTime = 0;
-  } else {
-    asyncTime = Date.now() - asyncTime;
-  }
-  console.log('thenjs begin:');
-  thenjsTime = Date.now();
-  cont();
-})
-.eachSeries(loops, function (cont, i) {
-  // console.log(i);
-  eachThen(cont);
-})
-.all(function (cont, error, result) {
-  if (error) {
-    console.error('thenjs error: ', error);
-    thenjsTime = 0;
-  } else {
-    thenjsTime = Date.now() - thenjsTime;
-  }
-  genResult('async', asyncTime);
-  genResult('thenjs', thenjsTime);
-});
+}).run(100); // 循环测试 100 次

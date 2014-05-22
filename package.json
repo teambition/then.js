@@ -4,7 +4,7 @@
   "author": {
     "name": "zensh"
   },
-  "version": "0.12.3",
+  "version": "0.12.4",
   "main": "then.js",
   "repository": {
     "type": "git",
@@ -27,7 +27,7 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "benchmark": "~1.0.0",
+    "jsbench": ">=0.0.1",
     "async": "~0.2.10",
     "grunt": "~0.4.1",
     "grunt-contrib-clean": "~0.5.0",

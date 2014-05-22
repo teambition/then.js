@@ -1,4 +1,4 @@
-then.js 0.12.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具！
 
@@ -16,14 +16,12 @@ then.js 0.12.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=m
 6. then链续接，当一条then链的所有任务运行完毕之后，还可以在其后继续追加then链，前面运行的结果能进入续接的then链继续处理。
 
 ##Benchmark
-each、eachSeries、parallel、series长度1000各跑1000次`node test/benchmark.js`：
 
-###异步任务，thenjs 略胜：
+`node test/benchmark.js`：
 
-async : 1000 loops, 22.818 ms/loop, 43.83 ops/sec.
-thenjs : 1000 loops, 20.349 ms/loop, 49.14 ops/sec.
+**同步任务，thenjs 比 async 快 100% !**，并且 async不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
 
-对于同步任务，thenjs 内部将同步任务转成了异步，耗时略长，但能正确处理，async 则不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
+**异步任务，thenjs 比 async 快 20% !**
 
 ## Install
 

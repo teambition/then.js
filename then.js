@@ -1,4 +1,4 @@
-// v0.12.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -6,7 +6,7 @@
 //
 // **License:** MIT
 
-/* global module, define, setImmediate, console  */
+/* global module, define, setImmediate, console */
 (function () {
   'use strict';
 
@@ -30,8 +30,17 @@
 
   // 参数不合法时生成相应的错误
   function errorify(obj, method, type) {
-    type = type || 'array';
-    return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method + '" is not a ' + type + '!');
+    return new Error('Argument ' + (obj && obj.toString()) + ' in "' + method +
+      '" is not a ' + (type || 'array') + '!');
+  }
+
+  // 同步执行函数，同时捕捉异常
+  function carry(errorHandler, fn) {
+    try {
+      fn.apply(null, slice.call(arguments, 2));
+    } catch (error) {
+      errorHandler(error);
+    }
   }
 
   // 异步执行函数，同时捕捉异常
@@ -88,13 +97,14 @@
   // ##内部 **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`cont` 处理最后结果
   function eachSeries(cont, array, iterator) {
-    var i = 0, end, result = [];
+    var i = 0, end, result = [], run, stack = thenjs.maxTickDepth;
 
     function next(err, value) {
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      defer(cont, iterator, next, array[i], i, array);
+      run = --stack ? carry : (stack = thenjs.maxTickDepth, defer);
+      run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
 
@@ -107,13 +117,14 @@
   // ##内部 **series** 函数
   // 串行执行一组 `array` 任务，`cont` 处理最后结果
   function series(cont, array) {
-    var i = 0, end, result = [];
+    var i = 0, end, result = [], run, stack = thenjs.maxTickDepth;
 
     function next(err, value) {
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      defer(cont, array[i], next, i, array);
+      run = --stack ? carry : (stack = thenjs.maxTickDepth, defer);
+      run(cont, array[i], next, i, array);
     }
     next._isCont = true;
 
@@ -123,7 +134,7 @@
     array[i](next, i, array);
   }
 
-  // 封装 handler，`_isCont` 属性判定 handler 是不是 `cont` ，不是则将 `cont` 注入成第一个参数
+  // 封装 handler，`_isCont` 判定 handler 是不是 `cont` ，不是则将 `cont` 注入成第一个参数
   function wrapTaskHandler(cont, handler) {
     return handler._isCont ? handler : function () {
       handler.apply(null, [cont].concat(slice.call(arguments)));
@@ -167,8 +178,7 @@
         self._result = false;
       } else if (self.debug) {
         // 表明这是第一次进入 cont，若存在 debug 则执行，对于同一结果保证 debug 只执行一次；
-        chain += 1;
-        self.debug.apply(self, ['\nChain ' + chain + ': '].concat(slice.call(args)));
+        self.debug.apply(self, ['\nChain ' + (++chain) + ': '].concat(slice.call(args)));
       }
 
       errorHandler = self._fail ? fail.shift() : self._error;
@@ -198,7 +208,7 @@
           // 如果定义了全局 **onerror**，则用它处理
           thenjs.onerror(error);
         } else {
-          // 对于 error，**Then** 链上没有相应 handler 处理，则在 **Then** 链上保存结果，等待下一次处理。
+          // 对于 error，**Then** 链上没有相应 handler 处理，则保存结果，等待下一次处理。
           self._result = [error];
         }
       }
@@ -216,7 +226,6 @@
         cont = function () {
           return continuation.apply(then, arguments);
         };
-
       // 标记 cont，cont 作为 handler 时不会被注入 cont，见 `wrapTaskHandler`
       cont._isCont = true;
       // 注入 cont
@@ -318,24 +327,36 @@
       defer(cont, each, cont, array, iterator);
     });
   };
+
   thenjs.eachSeries = function (array, iterator, debug) {
     return closureThen(debug)(function (cont) {
       defer(cont, eachSeries, cont, array, iterator);
     });
   };
+
   thenjs.parallel = function (array, debug) {
     return closureThen(debug)(function (cont) {
       defer(cont, parallel, cont, array);
     });
   };
+
   thenjs.series = function (array, debug) {
     return closureThen(debug)(function (cont) {
       defer(cont, series, cont, array);
     });
   };
+
   thenjs.nextTick = function (fn) {
-    nextTick(fn);
+    var args = slice.call(arguments, 1);
+    nextTick(function () {
+      fn.apply(null, args);
+    });
   };
+
+  thenjs.defer = defer;
+
+  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，用于避免同步任务流过深导致的`Maximum call stack size exceeded`
+  thenjs.maxTickDepth = 100;
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
     module.exports = thenjs;
