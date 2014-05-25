@@ -1,10 +1,10 @@
 {
   "name": "thenjs",
-  "description": "Another very small asynchronous promise tool!",
+  "description": "A very small asynchronous promise tool!",
   "author": {
     "name": "zensh"
   },
-  "version": "0.12.4",
+  "version": "1.0.0",
   "main": "then.js",
   "repository": {
     "type": "git",
@@ -27,8 +27,8 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "jsbench": ">=0.0.1",
-    "async": "~0.2.10",
+    "jsbench": ">=0.3.0",
+    "async": ">=0.9.0",
     "grunt": "~0.4.1",
     "grunt-contrib-clean": "~0.5.0",
     "grunt-contrib-jshint": "~0.7.2",

@@ -1,4 +1,4 @@
-// v0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.0.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -7,7 +7,17 @@
 // **License:** MIT
 
 /* global module, define, setImmediate, console */
-(function () {
+(function (root, factory) {
+  'use strict';
+
+  if (typeof module === 'object' && typeof module.exports === 'object') {
+    module.exports = factory();
+  } else if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else {
+    root.thenjs = factory();
+  }
+}(this, function () {
   'use strict';
 
   var slice = [].slice,
@@ -97,16 +107,18 @@
   // ##内部 **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`cont` 处理最后结果
   function eachSeries(cont, array, iterator) {
-    var i = 0, end, result = [], run, stack = thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack, maxTickDepth = +thenjs.maxTickDepth;
 
     function next(err, value) {
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      run = --stack ? carry : (stack = thenjs.maxTickDepth, defer);
+      // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
+      run = --stack ? carry : (stack = maxTickDepth, defer);
       run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
+    stack = maxTickDepth = maxTickDepth >= 1 ? maxTickDepth : 100;
 
     if (!isArray(array)) return cont(errorify(array, 'eachSeries'));
     end = array.length - 1;
@@ -117,16 +129,18 @@
   // ##内部 **series** 函数
   // 串行执行一组 `array` 任务，`cont` 处理最后结果
   function series(cont, array) {
-    var i = 0, end, result = [], run, stack = thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack, maxTickDepth = +thenjs.maxTickDepth;
 
     function next(err, value) {
       if (!isNull(err)) return cont(err);
       result[i] = value;
       if (++i > end) return cont(null, result);
-      run = --stack ? carry : (stack = thenjs.maxTickDepth, defer);
+      // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
+      run = --stack ? carry : (stack = maxTickDepth, defer);
       run(cont, array[i], next, i, array);
     }
     next._isCont = true;
+    stack = maxTickDepth = maxTickDepth >= 1 ? maxTickDepth : 100;
 
     if (!isArray(array)) return cont(errorify(array, 'series'));
     end = array.length - 1;
@@ -354,15 +368,8 @@
   };
 
   thenjs.defer = defer;
-
-  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，用于避免同步任务流过深导致的`Maximum call stack size exceeded`
+  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，
+  // 用于避免同步任务流过深导致的`Maximum call stack size exceeded`
   thenjs.maxTickDepth = 100;
-
-  if (typeof module === 'object' && typeof module.exports === 'object') {
-    module.exports = thenjs;
-  } else if (typeof define === 'function' && define.amd) {
-    define([], function () {return thenjs;});
-  } else if (typeof window === 'object') {
-    window.thenjs = thenjs;
-  }
-}());
+  return thenjs;
+}));

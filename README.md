@@ -1,4 +1,4 @@
-then.js 0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.0.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具！
 
@@ -8,20 +8,60 @@ then.js 0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=m
 
 ## 特征
 
-1. 无需像Q.js那样封装，可以用自然的方式直接把N多异步回调函数写成一个长长的then链；
-2. 拥有类似Async.js但更强大的each、eachSeries、parallel、series批量异步组合函数，它们都可在then链上调用；
-3. Error收集器fail方法可在任意位置调用，可以调用一次或多次，让你随心所欲处理各种Error。还可以把fail放在末尾当作殿后函数运行（即不管then链成功或失败均运行该函数）；
-4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则console.log）;
-5. 全局错误处理onerror;
-6. then链续接，当一条then链的所有任务运行完毕之后，还可以在其后继续追加then链，前面运行的结果能进入续接的then链继续处理。
+1. 可以像标准的 `Promise` 那样，把N多异步回调函数写成一个长长的 `then` 链，并且比 Promise 更简洁自然。因为如果使用标准 Promise 的 then 链，其中的异步函数都必须转换成 Promise，thenjs 则无需转换，像使用 callback 一样执行异步函数即可。
+
+2. 可以像 `async`那样实现同步或异步队列函数，并且比 async 更方便。因为 async 的队列是一个个独立体，而 thenjs 的队列在 `Then` 链上，可形成链式调用。
+
+3. 强大的 Error 机制，可以捕捉任何同步或异步的异常错误，甚至是位于异步函数中的语法错误。并且捕捉的错误任君处置。
+
+4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则用 console.log），方便调试。
 
 ##Benchmark
 
-`node test/benchmark.js`：
+`node test/benchmark.js`，centos 虚拟机中测试结果：
 
-**同步任务，thenjs 比 async 快 100% !**，并且 async不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
+**同步任务，thenjs 比 async 快 100% 以上 !**，并且 async不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
 
-**异步任务，thenjs 比 async 快 20% !**
+**异步任务，thenjs 比 async 快 20% 以上!**
+
+## DEMO
+
+    'use strict';
+    /*global console*/
+
+    var thenjs = require('../then.js');
+
+    function task(arg, callback) { // 模拟异步任务
+      thenjs.nextTick(function () {
+        callback(null, arg);
+      });
+    }
+
+    function errorTask(error, callback) { // 模拟出错的异步任务
+      thenjs.nextTick(function () {
+        callback(error);
+      });
+    }
+
+    thenjs(function (cont) {
+      task(10, cont); // 执行第一个异步任务
+    }).then(function (cont, arg) {
+      console.log(arg); // 输出 10
+      errorTask(new Error('error!!'), cont); // 执行第二个报错的异步任务
+    }).fail(function (cont, error) {
+      console.log(error); // 输出 Error: error!!
+      cont(); // 继续下一个链接
+    }).each([0, 1, 2], function (cont, value) {
+      task(value * 2, cont); // 并行执行队列任务，把队列 list 中的每一个值输入到 task 中运行
+    }).then(function (cont, result) {
+      console.log(result); // 输出 [0, 2, 4]
+      cont(); // 继续下一个链
+    }).series([ // 串行执行队列任务
+      function (cont) { task(88, cont); }, // 队列第一个是异步任务
+      function (cont) { cont(null, 99); } // 第二个是同步任务
+    ]).all(function (cont, error, result) {
+      console.log(error, result); // 输出 null [88, 99]
+    });
 
 ## Install
 
@@ -37,305 +77,106 @@ then.js 0.12.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=m
 
     <script src="/pathTo/then.js"></script>
 
-**with require**
+**with AMD**
 
-    var then = require('thenjs');
-
-**with define**
-
-    define(['thenjs'], function (then) {
+    define(['thenjs'], function (thenjs) {
         //...
     });
 
+
 ## API
 
-### 概览
+**以下所有的 'cont'，取义于 `continue`。'cont' 绑定到了下一个 `Then` 链，即收集当前任务结果，继续执行下一链。它等效于 node.js 的 `callback`，可以接受多个参数，其中第一个参数为 'error'。**
 
-####入口函数：（return then对象）
+### thenjs(startFn, [debug])
 
-+ then(startHandler, [debug])
+执行 `startFn`，返回一个新的 `Then` 对象.
 
-+ then.each(array, iterator, [debug])
++ **startFn:** Function，function (cont) {}
++ **debug:** Boolean 或 Function，可选，开启调试模式，将每一个链的运行结果用 `debug` 函数处理，如果debug为非函数真值，则调用 `console.log`，下同
 
-+ then.eachSeries(array, iterator, [debug])
+### thenjs.each(array, iterator, [debug])
 
-+ then.parallel(taskFnArray, [debug])
+将 `array` 中的值应用于 `iterator` 函数（同步或异步），并行执行。返回一个新的 `Then` 对象。
 
-+ then.series(taskFnArray, [debug])
++ **array:** Array
++ **iterator:** Function，function (cont, value, index, array) {}
 
-+ then.onerror(errorHandler) (无返回)
+### thenjs.eachSeries(array, iterator, [debug])
 
-+ then.nextTick(fn) (无返回)
+将 `array` 中的值应用于 `iterator` 函数（同步或异步），串行执行。返回一个新的 `Then` 对象。
 
-####then对象方法：（return then对象）
++ **array:** Array,
++ **iterator:** Function，function (cont, value, index, array) {}
 
-+ .then(successHandler, [errorHandler])
 
-+ .all(allHandler)
+### thenjs.parallel(taskFnArray, [debug])
 
-+ .fail(errorHandler)
+`taskFnArray` 是一个函数（同步或异步）数组，并行执行。返回一个新的 `Then` 对象。
 
-+ .each(array, iterator)
++ **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
-+ .eachSeries(array, iterator)
 
-+ .parallel(taskFnArray)
+### thenjs.series(taskFnArray, [debug])
 
-+ .series(taskFnArray)
+`taskFnArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Then` 对象。
 
-### 1. 入口函数
++ **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
-#### then([startHandler], [debug])
-startHandler是可选的，如果未提供，将直接进入下一个then object。
+### Then.prototype.then(successHandler, [errorHandler])
 
-***Parameters:***
+如果上一链正确，则进入 `successHandler` 执行，否则进入 `errorHandler` 执行。返回一个新的 `Then` 对象。
 
-+ **startHander:** function (cont) {}
-+ **context:** 为startHandler绑定的this值，下同
-+ **debug:** debug为函数或其它真值时就对本then链开启调试模式，逐步将每一个链的cont运行结果用debug函数处理，如果debug为非函数真值，则调用console.log打印，下同
++ **successHandler:** Function，function (cont, value1, value2, ...) {}
++ **errorHandler:** Function，可选，function (cont, error) {}
 
-***Return:*** then object
+### Then.prototype.all(allHandler)
 
-#### then.each(array, iterator, [debug])
-将array中的值应用于iterator函数（同步或异步任务），并行执行。iterator的第一个参数cont用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与array对应。当所有iterator任务运行完毕，或者cont捕捉到任何一个err，即进入下一个then object。如果array为空数组，结果数组也将为空数组，iterator不会执行而直接进入下一个then object。
+无论上一链是否存在 `error`，均进入 `allHandler` 执行，等效于 `.then(successHandler, errorHandler)`。返回一个新的 `Then` 对象。
 
-***Parameters:***
++ **allHandler:** Function，function (cont, error, value1, value2, ...) {}
 
-+ **array:** array apply to iterator
-+ **taskIterator:** function (cont, value, index, array) {}
-+ **context:** context apply to iterator
+### Then.prototype.fail(errorHandler)
 
-***Return:*** then object
+`fail` 用于捕捉 `error`，如果在它之前的任意一个链上产生了 `error`，并且未被 `then`, `all` 等捕获，则会跳过中间链，直接进入 `fail`。返回一个新的 `Then` 对象。
 
-#### then.eachSeries(array, iterator, [debug])
-将array中的值应用于iterator函数（同步或异步任务），按顺序执行，上一个任务执行完毕才开始执行下一个任务。iterator的第一个参数cont用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与array对应。当所有iterator任务运行完毕，或者cont捕捉到任何一个err，即进入下一个then object。如果array为空数组，结果数组也将为空数组，iterator不会执行而直接进入下一个then object。
++ **errorHandler:** Function，function (cont, error) {}
 
-***Parameters:***
+### Then.prototype.each(array, iterator)
 
-+ **array:** array apply to iterator
-+ **taskIterator:** function (cont, value, index, array) {}
-+ **context:** context apply to iterator
+参数类似 `thenjs.each`，返回一个新的 `Then` 对象。
 
-***Return:*** then object
+不同在于，参数可省略，如果没有参数，则会查找上一个链的输出结果作为参数，即上一个链可以这样 `cont(null, array, iterator)` 传输参数到each。下面三个队列方法行为类似。
 
+### Then.prototype.eachSeries(array, iterator)
 
-#### then.parallel(taskFnArray, [debug])
-taskFnArray是一系列同步或异步任务函数组成的数组，并行执行。taskFnArray中每一个函数的第一个参数cont用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与taskFnArray对应。当所有taskFnArray任务运行完毕，或者cont捕捉了任何一个err，即进入下一个then object。如果taskFnArray为空数组，结果数组也将为空数组，将会直接进入下一个then object。
+参数类似 `thenjs.eachSeries`，返回一个新的 `Then` 对象。
 
-***Parameters:***
+### Then.prototype.parallel(taskFnArray)
 
-+ **taskFnArray:** [taskFn1, taskFn2, taskFn3, ...]
-+ **taskFn in taskFnArray:** function (cont) {}
-+ **context:** context apply to iterator
+参数类似 `thenjs.parallel`，返回一个新的 `Then` 对象。
 
-***Return:*** then object
+### Then.prototype.series(taskFnArray)
 
-#### then.series(taskFnArray, [debug])
-taskFnArray是一系列同步或异步任务函数组成的数组，按顺序执行，上一个任务执行完毕才开始执行下一个任务。taskFnArray中每一个函数的有第一个参数cont用于收集err和运行结果，所有结果将形成一个结果数组进入下一个then object，结果数组的顺序与taskFnArray对应。当所有taskFnArray任务运行完毕，或者cont捕捉了任何一个err，即进入下一个then object。如果taskFnArray为空数组，结果数组也将为空数组，将会直接进入下一个then object。
+参数类似 `thenjs.series`，返回一个新的 `Then` 对象。
 
-***Parameters:***
+### thenjs.nextTick(callback, arg1, arg2, ...)
 
-+ **taskFnArray:** [taskFn1, taskFn2, taskFn3, ...]
-+ **taskFn in taskFnArray:** function (cont) {}
-+ **context:** context apply to iterator
+工具函数，类似于 `node.js` 的 `setImmediate`，异步执行 `callback`，而 `arg1`, `arg2` 会成为它的运行参数。
 
-***Return:*** then object
+### thenjs.defer(errorHandler, callback, arg1, arg2, ...)
 
+工具函数，类似于 `thenjs.nextTick`，不同的是异步使用 `try catch` 执行 `callback`，如果捕捉到 `error`，则进入 `errorHandler` 执行。
 
-### 2. *then object*的方法
++ **errorHandler:** Function，function (error) {}
 
-#### .all(allHandler)
-若all存在，则上一个then对象无论是捕捉到err还是正常结果，均进入all执行，allHandler可用上层then对象的cont代替`.all(cont)`。
+### thenjs.onerror = function (error) {};
 
-***Parameters:***
+全局配置参数，用户可自定义的全局 error 监听函数，`thenjs.onerror` 默认值为 `undefined`。若定义，当执行链上发生 `error` 且没有被捕捉时，`error` 会进入 `thenjs.onerror`。
 
-+ **allHandler:** function (cont, err, value…) {}
+### thenjs.maxTickDepth = 100;
 
-***Return:*** then object
-
-#### .then(successHandler, [errorHandler])
-若errorHandler存在，上一个then对象捕捉到err则执行errorHandler，否则执行successHandler， errorHandler可用上层then对象的cont代替，successHandler则不能（否则会把第一个value当作err处理）。
-
-***Parameters:***
-
-+ **successHandler:** function (cont, value…) {}
-+ **errorHandler:** function (cont, err) {}
-
-***Return:*** then object
-
-#### .fail(errorHandler)
-fail用于捕捉在它之前的then链上发生的任何err。若fail存在，fail之前的then链发生了err，且没有被all的allHandler或then的errorHandler捕捉，则err直接进入最近的fail节点，err发生点与fail之间的then链不会被执行。errorHandler可用上层then对象的cont代替`.fail(cont)`。一个then链可存在0个或多个fail方法，强烈建议then链的最后一个then对象为fail方法。如果then链中没有任何err捕捉器，则err会直接throw。**fail方法可用于运行殿后函数：对一个一条then链，使用`cont(true)`把最后无err运行的then对象导向末端的fail，则该then链不管是正确运行还是发生了err，均会执行末端的fail方法。**
-
-***Parameters:***
-
-+ **errorHandler:** function (cont, err) {}
-
-***Return:*** then object
-
-#### .each(array, iterator)
-参数类似then.each。不同在于，一是无debug参数; 当array, iterator, context为null或undefined时，此处的each会查找上一个then对象的输出结果，如果存在，则作为它的运行参数：例如上一个then对象输出`cont(null, array1, iterator1)`，此处为`each(null, null, this)`，则该each会获取array1, iterator1作为为它的参数运行。
-
-#### .eachSeries(array, iterator)
-参数类似then.eachSeries。不同处类似上面.each。
-
-#### .parallel(taskFnArray)
-参数类似then.eachSeries。不同处类似上面.each。
-
-#### .series(taskFnArray)
-参数类似then.eachSeries。不同处类似上面.each。
-
-### 3. 其他说明
-
-
-1. 关于Error收集器
-
-    then对象的then方法的errorHandler函数、all方法、fail方法均能收集error。其中then方法的errorHandler函数和all方法只能收集上一个then对象产生的error；fail方法则能收集再它之前所有then链产生的error。
-
-2. 关于触发器`cont`
-
-    then.js中最关键的就是`cont`，用于触发下一个then链。从上面可知，入口函数、then方法、all方法、fail方法中的任务函数的第一个参数都被注入了cont方法，**如果任务函数本身是一个cont方法，则不会再被注入cont方法**。
-
-    cont的第一个参数永远是error，如果error存在，则error下一个then对象的Error收集器，如果Error收集器不存在，则抛出error。
-
-    如果异步任务的callback的第一个参数为error，即callback(error, result1, ...)的形式，则可直接用cont代替异步任务的callback。Node.js中的异步函数基本都是这种形式，then.js用起来超方便。
-
-    **如果一个函数体内的同一个cont被多次调用，那么只有最先被触发的那个cont有效**。这个效果类似于`or`：多个异步任务同时进行，最先返回的结果进入下一个then链，其它后返回的结果忽略。
-
-3. 关于fail方法
-
-    `fail`方法能捕捉在它之前的then链中的任何一个error。fail的优先级低于then方法的errorHandler和all方法，即then对象不存在then方法的errorHandler和all方法时error才会进入fail。当then链的某个then对象产生了error时，如果该then对象的下一个then对象存在Error收集器，则error进入该Error收集器，否则error会直接进入then链下游最近的fail方法，其间的then对象均会跳过。
-
-
-
-## then.js使用模式
-
-**直链：**
-
-    then(function (cont) {
-        // ....
-        cont(err, ...);
-    }).then(function (cont, value) {
-        // ....
-        cont(err, ...);
-    }, function (cont, err) {
-        // ....
-        cont(err, ...);
-    }).then(function (cont) {
-        // ....
-        cont(err, ...);
-    }).all(function (cont, err, value) {
-        // ....
-        cont(err, array);
-    }).each(null, function (cont, value) {
-        // ....
-        cont(err, ...);
-    }).eachSeries(null, function (cont) {
-        // ....
-        cont(err, ...);
-    }).parallel(null, function (cont) {
-        // ....
-        cont(err, ...);
-    }).series(null, function (cont) {
-        // ....
-        cont(err, ...);
-    }).fail(function (cont, err) {
-        // ....
-    });
-
-
-**嵌套：**
-
-    then(function (cont) {
-        // ....
-        cont(err, ...);
-    }).then(function (cont, value) {
-        //第二层
-        then(function (cont2) {
-            // ....
-            cont2(err, ...);
-        }).then(function (cont2, value) {
-            //第三层
-            then(function (cont3) {
-                // ....
-            }).all(cont2); // 返回二层
-        }).then(function (cont2) {
-            // ....
-            cont(err, ...); // 返回一层
-        }).fail(cont); // 返回一层
-    }).then(function (cont) {
-        // ....
-        cont(err, ...);
-    }).fail(function (cont, err) {
-        // ....
-    });
-
-
-**async 嵌套：**
-
-    then(function (cont) {
-        // ....
-        cont(err, array);
-    }).then(function (cont, array) {
-        // ....并行执行任务
-        then.each(array, function (cont2, value) {
-            cont2();
-        }, cont);
-    }).then(function (cont, array) {
-        // ....逐步执行任务
-        then.eachSeries(array, function (cont2, value) {
-            cont2();
-        }, cont);
-    }).then(function (cont, array) {
-        // ....并行执行任务
-        then.parallel([function (cont2) {
-            //任务1
-            cont2();
-        }, function (cont2) {
-            //任务2
-            cont2();
-        }, function (cont2) {
-            //任务3
-            cont2();
-        }, ...], cont);
-    }).then(function (cont, array) {
-        // ....逐步执行任务
-        then.series([function (cont2) {
-            //任务1
-            cont2();
-        }, function (cont2) {
-            //任务2
-            cont2();
-        }, function (cont2) {
-            //任务3
-            cont2();
-        }, ...], cont);
-    }).then(function (cont) {
-        // ....
-        cont(err, ...);
-    }).fail(function (cont, err) {
-        // ....
-    });
-
-**then对象取代callback：**
-
-    function getFileAsync() {
-        return then(function (cont) {
-            readFile(failname, cont);
-        }).then(function (cont, fileContent) {
-            // 处理fileContent
-            cont(null, result);
-        }).fail(function (cont, err) {
-            // 处理error
-            cont(err);
-        });
-    }
-
-    getFileAsync().then(function (cont, file) {
-        // ....
-    }).fail(function(cont, err) {
-        // ....
-    });
-
+全局配置参数， 默认值为 `100`。如果同步任务串行执行，嵌套深度达到一定值时，javascript 会报错 `Maximum call stack size exceeded`，`thenjs.maxTickDepth` 就是为了解决这个问题，当串行任务流执行深度达到 `maxTickDepth` 值时，强制异步执行一次。
 
 
 ### Who Used
@@ -345,7 +186,5 @@ fail用于捕捉在它之前的then链上发生的任何err。若fail存在，fa
 
 
 ## Examples
-
-**参见demo——test.js**
 
 更多使用案例请参考[jsGen](https://github.com/zensh/jsgen)源代码！
