@@ -26,5 +26,21 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // co 测试主体
+    co(function *(){
+      // 并行 list 队列
+      yield list.map(function (i) {
+        return task;
+      });
+      // 串行 list 队列
+      for (var i = 0, l = list.length; i < l; i++) {
+        yield task;
+      }
+      // 并行 tasks 队列
+      yield tasks;
+      // 串行 tasks 队列
+      for (i = 0, l = tasks.length; i < l; i++) {
+        yield tasks[i];
+      }
+    })(callback);
   };
 };

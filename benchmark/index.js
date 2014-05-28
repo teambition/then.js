@@ -6,9 +6,6 @@ var JSBench = require('jsbench'),
   cycles = 100, // 每个测试体运行次数
   syncMode = true; // 用同步任务测试
 
-
-
-
 var jsbench = new JSBench();
 
 // 如果支持 Promise，则加入 Promise 测试
@@ -16,10 +13,10 @@ if (typeof Promise === 'function') {
   jsbench.add('Promise', require('./promise.js')(len, syncMode));
 }
 
-// try { // 检测是否支持 generator，是则加载 co 测试
-//   new Function('return function* () {}');
-//   jsbench.add('co', require('../test-es6/co.js')())
-// } catch (e) {}
+try { // 检测是否支持 generator，是则加载 co 测试
+  var check = new Function('return function* () {}');
+  jsbench.add('co', require('./co.js')(len, syncMode));
+} catch (e) {}
 
 jsbench.
   add('bluebird', require('./bluebird.js')(len, syncMode)).

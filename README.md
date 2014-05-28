@@ -1,4 +1,4 @@
-then.js 1.0.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.0.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具！
 
@@ -20,9 +20,29 @@ then.js 1.0.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 `node benchmark/index.js`，centos 虚拟机中测试结果：
 
-**同步任务，thenjs 比 async 快 100% 以上 !**，并且 async不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
+    [root@centos then.js]# node benchmark/index.js
 
-**异步任务，thenjs 比 async 快 20% 以上!**
+    JSBench Async Results:
+    Promise: 100 cycles, 88.89 ms/cycle, 11.25 ops/sec
+    bluebird: 100 cycles, 29.82 ms/cycle, 33.53 ops/sec
+    async: 100 cycles, 21.9 ms/cycle, 45.66 ops/sec
+    thenjs: 100 cycles, 21.68 ms/cycle, 46.13 ops/sec
+    co: 100 cycles, 18.96 ms/cycle, 52.74 ops/sec
+    Promise: 100%; bluebird: 298.09%; async: 405.89%; thenjs: 410.01%; co: 468.83%;
+
+    JSBench Sync Results:
+    Promise: 100 cycles, 69.93 ms/cycle, 14.30 ops/sec
+    async: 100 cycles, 11.23 ms/cycle, 89.05 ops/sec
+    thenjs: 100 cycles, 7.76 ms/cycle, 128.87 ops/sec
+    bluebird: 100 cycles, 7.2 ms/cycle, 138.89 ops/sec
+    co: 100 cycles, 5.83 ms/cycle, 171.53 ops/sec
+    Promise: 100%; async: 622.71%; thenjs: 901.16%; bluebird: 971.25%; co: 1199.49%;
+
+**测试结果在不同环境下各有浮动，但得分对比差不多**
+
+**`async` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
+
+**`co` 在10000长度的同步任务队列测试中也终止，且未报错，原因待查**
 
 ## DEMO
 
