@@ -19,15 +19,8 @@ module.exports = function(grunt) {
       options: {
         jshintrc: '.jshintrc'
       },
-      then: {
-        src: 'then.js'
-      },
-      Gruntfile: {
-        src: 'Gruntfile.js'
-      },
-      testjs: {
-        src: 'test/*.js'
-      }
+      build: ['then.js', 'Gruntfile.js', 'test/*.js'],
+      test: ['benchmark/*.js']
     },
 
     uglify: {
@@ -54,7 +47,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
   // Default task.
-  grunt.registerTask('default', ['jshint', 'nodeunit', 'clean', 'uglify']);
+  grunt.registerTask('default', ['jshint:build', 'nodeunit', 'clean', 'uglify']);
   grunt.registerTask('test', ['jshint', 'nodeunit']);
-  grunt.registerTask('build', ['jshint', 'clean', 'uglify']);
 };

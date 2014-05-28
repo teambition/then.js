@@ -18,7 +18,7 @@ then.js 1.0.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 ##Benchmark
 
-`node test/benchmark.js`，centos 虚拟机中测试结果：
+`node benchmark/index.js`，centos 虚拟机中测试结果：
 
 **同步任务，thenjs 比 async 快 100% 以上 !**，并且 async不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）
 
