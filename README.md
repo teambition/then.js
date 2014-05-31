@@ -1,4 +1,4 @@
-then.js 1.0.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.1.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（3.72KB）！
 
@@ -23,20 +23,24 @@ then.js 1.0.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
     [root@centos then.js]# node benchmark/index.js
 
     JSBench Async Results:
-    Promise: 100 cycles, 88.89 ms/cycle, 11.25 ops/sec
-    bluebird: 100 cycles, 29.82 ms/cycle, 33.53 ops/sec
-    async: 100 cycles, 21.9 ms/cycle, 45.66 ops/sec
-    thenjs: 100 cycles, 21.68 ms/cycle, 46.13 ops/sec
-    co: 100 cycles, 18.96 ms/cycle, 52.74 ops/sec
-    Promise: 100%; bluebird: 298.09%; async: 405.89%; thenjs: 410.01%; co: 468.83%;
+    Promise: 100 cycles, 82.21 ms/cycle, 12.16 ops/sec
+    bluebird: 100 cycles, 26.65 ms/cycle, 37.52 ops/sec
+    async: 100 cycles, 19 ms/cycle, 52.63 ops/sec
+    thenjs: 100 cycles, 17.89 ms/cycle, 55.90 ops/sec
+    co: 100 cycles, 17.68 ms/cycle, 56.56 ops/sec
+
+    Promise: 100%; bluebird: 308.48%; async: 432.68%; thenjs: 459.53%; co: 464.99%;
+
 
     JSBench Sync Results:
-    Promise: 100 cycles, 69.93 ms/cycle, 14.30 ops/sec
-    async: 100 cycles, 11.23 ms/cycle, 89.05 ops/sec
-    thenjs: 100 cycles, 7.76 ms/cycle, 128.87 ops/sec
-    bluebird: 100 cycles, 7.2 ms/cycle, 138.89 ops/sec
-    co: 100 cycles, 5.83 ms/cycle, 171.53 ops/sec
-    Promise: 100%; async: 622.71%; thenjs: 901.16%; bluebird: 971.25%; co: 1199.49%;
+    Promise: 100 cycles, 57.38 ms/cycle, 17.43 ops/sec
+    async: 100 cycles, 5.94 ms/cycle, 168.35 ops/sec
+    thenjs: 100 cycles, 3.52 ms/cycle, 284.09 ops/sec
+    co: 100 cycles, 3.25 ms/cycle, 307.69 ops/sec
+    bluebird: 100 cycles, 2.52 ms/cycle, 396.83 ops/sec
+
+    Promise: 100%; async: 965.99%; thenjs: 1630.11%; co: 1765.54%; bluebird: 2276.98%;
+
 
 **测试结果在不同环境下各有浮动，但得分对比差不多**
 
@@ -65,21 +69,27 @@ then.js 1.0.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
     thenjs(function (cont) {
       task(10, cont); // 执行第一个异步任务
-    }).then(function (cont, arg) {
+    }).
+    then(function (cont, arg) {
       console.log(arg); // 输出 10
       errorTask(new Error('error!!'), cont); // 执行第二个报错的异步任务
-    }).fail(function (cont, error) {
+    }).
+    fail(function (cont, error) {
       console.log(error); // 输出 Error: error!!
       cont(); // 继续下一个链接
-    }).each([0, 1, 2], function (cont, value) {
+    }).
+    each([0, 1, 2], function (cont, value) {
       task(value * 2, cont); // 并行执行队列任务，把队列 list 中的每一个值输入到 task 中运行
-    }).then(function (cont, result) {
+    }).
+    then(function (cont, result) {
       console.log(result); // 输出 [0, 2, 4]
       cont(); // 继续下一个链
-    }).series([ // 串行执行队列任务
+    }).
+    series([ // 串行执行队列任务
       function (cont) { task(88, cont); }, // 队列第一个是异步任务
       function (cont) { cont(null, 99); } // 第二个是同步任务
-    ]).all(function (cont, error, result) {
+    ]).
+    all(function (cont, error, result) {
       console.log(error, result); // 输出 null [88, 99]
     });
 
