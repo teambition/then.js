@@ -1,4 +1,4 @@
-then.js 1.1.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.1.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（3.72KB）！
 
@@ -44,9 +44,7 @@ then.js 1.1.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 **测试结果在不同环境下各有浮动，但得分对比差不多**
 
-**`async` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
-
-**`co` 在10000长度的同步任务队列测试中也终止，且未报错，原因待查**
+**`async` 和 `co` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
 
 ## DEMO
 

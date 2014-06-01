@@ -1,4 +1,4 @@
-// v1.1.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.1.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -77,14 +77,12 @@
 
     // then链上的结果已经处理，若重复执行 cont 则直接跳过；
     if (self._result === false) return;
-    if (self._result) {
-      // _result 已存在，表明上一次 cont 没有 handler 处理
-      // 这是第二次进入 cont 继续处理，并标记结果已处理，这是由续接 **Thenjs** 链触发
-      self._result = false;
-    } else if (self._chain) {
-      // 表明这是第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；
+    // 第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；
+    if (!self._result && self._chain) {
       self.debug.apply(self, ['\nChain ' + self._chain + ': '].concat(slice.call(arguments)));
     }
+    // 标记已进入 continuation 处理
+    self._result = false;
 
     try {
       continuationExec(self, arguments, error);
@@ -104,21 +102,19 @@
   }
 
   function continuationError(ctx, err, error) {
-    var _nextThen = ctx._nextThen, errorHandler = ctx._error || ctx._fail;
-    // 获取 error stack
-    if (err.stack)  err.stack = err.stack;
-    // 本次 cont 捕捉的 error，直接放到下一链处理
+    var _nextThen = ctx, errorHandler = ctx._error || ctx._fail;
+    // 本次 continuation 捕捉的 error，直接放到下一链处理
     if (ctx._nextThen && error == null) return continuation.call(ctx._nextThen, err);
     // 获取本链的 error handler 或者链上后面的fail handler
     while (!errorHandler && _nextThen) {
       errorHandler = _nextThen._fail;
       _nextThen = _nextThen._nextThen;
     }
-    if (errorHandler) return errorHandler.call(null, err);
+    if (errorHandler) return errorHandler(err);
     // 如果定义了全局 **onerror**，则用它处理
     if (thenjs.onerror) return thenjs.onerror(err);
-    // 对于 error，**Thenjs** 链上没有相应 handler 处理，则保存结果，等待下一次处理。
-    ctx._result = [err];
+    // 对于 error，如果没有任何 handler 处理，则保存到链上最后一个 **Thenjs** 对象，等待下一次处理。
+    _nextThen._result = [err];
   }
 
   // 注入 cont，执行 fn，并返回新的 **Thenjs** 对象
@@ -156,7 +152,8 @@
   // 用于生成 `each` 和 `parallel` 的 `next`
   function parallelNext(cont, result, counter, i) {
     function next(error, value) {
-      if (error != null) return cont(error);
+      if (counter.finished) return;
+      if (error != null) return (counter.finished = true, cont(error));
       result[i] = value;
       return --counter.i < 0 && cont(null, result);
     }
@@ -211,7 +208,7 @@
     if (!isArray(array)) return cont(errorify(array, 'eachSeries'));
     end = array.length - 1;
     if (end < 0) return cont(null, result);
-    iterator(next, array[i], i, array);
+    iterator(next, array[0], 0, array);
   }
 
   // ## **series** 函数
@@ -233,7 +230,7 @@
     if (!isArray(array)) return cont(errorify(array, 'series'));
     end = array.length - 1;
     if (end < 0) return cont(null, result);
-    array[i](next, i, array);
+    array[0](next, 0, array);
   }
 
   // **Thenjs** 对象上的 **all** 方法
