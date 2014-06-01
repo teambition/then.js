@@ -1,4 +1,4 @@
-// v1.1.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.1.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -305,7 +305,8 @@
     // 使用 new 则同步生成一个 **Thenjs** 对象
     var run = this instanceof thenjs ? carry : defer;
     return thenFactory(function (cont) {
-      if (startFn) run(cont, startFn, cont);
+      if (!startFn) return cont();
+      run(cont, startFn, cont);
     }, null, debug);
   }
 
