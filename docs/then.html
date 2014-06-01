@@ -27,7 +27,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v1.1.0 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v1.1.2 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
@@ -204,8 +204,7 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (self._result === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span>;
-    <span class="hljs-keyword">if</span> (self._result) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (self._result === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span>;</pre></div></div>
 
         </li>
 
@@ -216,13 +215,13 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
-              <p>_result 已存在，表明上一次 cont 没有 handler 处理
-这是第二次进入 cont 继续处理，并标记结果已处理，这是由续接 <strong>Thenjs</strong> 链触发</p>
+              <p>第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>      self._result = <span class="hljs-literal">false</span>;
-    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (self._chain) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (!self._result &amp;&amp; self._chain) {
+      self.debug.apply(self, [<span class="hljs-string">'\nChain '</span> + self._chain + <span class="hljs-string">': '</span>].concat(slice.call(<span class="hljs-built_in">arguments</span>)));
+    }</pre></div></div>
 
         </li>
 
@@ -233,12 +232,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
-              <p>表明这是第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；</p>
+              <p>标记已进入 continuation 处理</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>      self.debug.apply(self, [<span class="hljs-string">'\nChain '</span> + self._chain + <span class="hljs-string">': '</span>].concat(slice.call(<span class="hljs-built_in">arguments</span>)));
-    }
+            <div class="content"><div class='highlight'><pre>    self._result = <span class="hljs-literal">false</span>;
 
     <span class="hljs-keyword">try</span> {
       continuationExec(self, <span class="hljs-built_in">arguments</span>, error);
@@ -271,7 +269,7 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
   }
 
   <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">continuationError</span><span class="hljs-params">(ctx, err, error)</span> {</span>
-    <span class="hljs-keyword">var</span> _nextThen = ctx._nextThen, errorHandler = ctx._error || ctx._fail;</pre></div></div>
+    <span class="hljs-keyword">var</span> _nextThen = ctx, errorHandler = ctx._error || ctx._fail;</pre></div></div>
 
         </li>
 
@@ -282,11 +280,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p>获取 error stack</p>
+              <p>本次 continuation 捕捉的 error，直接放到下一链处理</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (err.stack)  err.stack = err.stack;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (ctx._nextThen &amp;&amp; error == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span> continuation.call(ctx._nextThen, err);</pre></div></div>
 
         </li>
 
@@ -297,11 +295,15 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <p>本次 cont 捕捉的 error，直接放到下一链处理</p>
+              <p>获取本链的 error handler 或者链上后面的fail handler</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (ctx._nextThen &amp;&amp; error == <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span> continuation.call(ctx._nextThen, err);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">while</span> (!errorHandler &amp;&amp; _nextThen) {
+      errorHandler = _nextThen._fail;
+      _nextThen = _nextThen._nextThen;
+    }
+    <span class="hljs-keyword">if</span> (errorHandler) <span class="hljs-keyword">return</span> errorHandler(err);</pre></div></div>
 
         </li>
 
@@ -312,15 +314,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
-              <p>获取本链的 error handler 或者链上后面的fail handler</p>
+              <p>如果定义了全局 <strong>onerror</strong>，则用它处理</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">while</span> (!errorHandler &amp;&amp; _nextThen) {
-      errorHandler = _nextThen._fail;
-      _nextThen = _nextThen._nextThen;
-    }
-    <span class="hljs-keyword">if</span> (errorHandler) <span class="hljs-keyword">return</span> errorHandler.call(<span class="hljs-literal">null</span>, err);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (thenjs.onerror) <span class="hljs-keyword">return</span> thenjs.onerror(err);</pre></div></div>
 
         </li>
 
@@ -331,11 +329,12 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
-              <p>如果定义了全局 <strong>onerror</strong>，则用它处理</p>
+              <p>对于 error，如果没有任何 handler 处理，则保存到链上最后一个 <strong>Thenjs</strong> 对象，等待下一次处理。</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (thenjs.onerror) <span class="hljs-keyword">return</span> thenjs.onerror(err);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    _nextThen._result = [err];
+  }</pre></div></div>
 
         </li>
 
@@ -345,22 +344,6 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-17">&#182;</a>
-              </div>
-              <p>对于 error，<strong>Thenjs</strong> 链上没有相应 handler 处理，则保存结果，等待下一次处理。</p>
-
-            </div>
-
-            <div class="content"><div class='highlight'><pre>    ctx._result = [err];
-  }</pre></div></div>
-
-        </li>
-
-
-        <li id="section-18">
-            <div class="annotation">
-
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>注入 cont，执行 fn，并返回新的 <strong>Thenjs</strong> 对象</p>
 
@@ -376,11 +359,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-19">
+        <li id="section-18">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>标记 cont，cont 作为 handler 时不会被注入 cont，见 <code>wrapTaskHandler</code></p>
 
@@ -391,11 +374,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-20">
+        <li id="section-19">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>设置并开启 debug 模式</p>
 
@@ -406,11 +389,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-21">
+        <li id="section-20">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p>注入 cont，初始化 handler</p>
 
@@ -424,11 +407,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-22">
+        <li id="section-21">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>检查上一链的结果是否处理，未处理则处理，用于续接 <strong>Thenjs</strong> 链</p>
 
@@ -445,11 +428,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-23">
+        <li id="section-22">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>封装 handler，<code>_isCont</code> 判定 handler 是不是 <code>cont</code> ，不是则将 <code>cont</code> 注入成第一个参数</p>
 
@@ -464,11 +447,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-24">
+        <li id="section-23">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>用于生成 <code>each</code> 和 <code>parallel</code> 的 <code>next</code></p>
 
@@ -476,7 +459,8 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">parallelNext</span><span class="hljs-params">(cont, result, counter, i)</span> {</span>
     <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">next</span><span class="hljs-params">(error, value)</span> {</span>
-      <span class="hljs-keyword">if</span> (error != <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span> cont(error);
+      <span class="hljs-keyword">if</span> (counter.finished) <span class="hljs-keyword">return</span>;
+      <span class="hljs-keyword">if</span> (error != <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span> (counter.finished = <span class="hljs-literal">true</span>, cont(error));
       result[i] = value;
       <span class="hljs-keyword">return</span> --counter.i &lt; <span class="hljs-number">0</span> &amp;&amp; cont(<span class="hljs-literal">null</span>, result);
     }
@@ -487,11 +471,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-25">
+        <li id="section-24">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <h2 id="-each-"><strong>each</strong> 函数</h2>
 <p>将一组数据 <code>array</code> 分发给任务迭代函数 <code>iterator</code>，并行执行，<code>cont</code> 处理最后结果</p>
@@ -513,11 +497,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-26">
+        <li id="section-25">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <h2 id="-parallel-"><strong>parallel</strong> 函数</h2>
 <p>并行执行一组 <code>array</code> 任务，<code>cont</code> 处理最后结果</p>
@@ -539,11 +523,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-27">
+        <li id="section-26">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <h2 id="-eachseries-"><strong>eachSeries</strong> 函数</h2>
 <p>将一组数据 <code>array</code> 分发给任务迭代函数 <code>iterator</code>，串行执行，<code>cont</code> 处理最后结果</p>
@@ -561,11 +545,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-28">
+        <li id="section-27">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <p>先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行</p>
 
@@ -580,17 +564,17 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'eachSeries'</span>));
     end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
-    iterator(next, array[i], i, array);
+    iterator(next, array[<span class="hljs-number">0</span>], <span class="hljs-number">0</span>, array);
   }</pre></div></div>
 
         </li>
 
 
-        <li id="section-29">
+        <li id="section-28">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <h2 id="-series-"><strong>series</strong> 函数</h2>
 <p>串行执行一组 <code>array</code> 任务，<code>cont</code> 处理最后结果</p>
@@ -608,11 +592,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-30">
+        <li id="section-29">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行</p>
 
@@ -627,17 +611,17 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'series'</span>));
     end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
-    array[i](next, i, array);
+    array[<span class="hljs-number">0</span>](next, <span class="hljs-number">0</span>, array);
   }</pre></div></div>
 
         </li>
 
 
-        <li id="section-31">
+        <li id="section-30">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>all</strong> 方法</p>
 
@@ -652,11 +636,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-32">
+        <li id="section-31">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>then</strong> 方法</p>
 
@@ -672,11 +656,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-33">
+        <li id="section-32">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>fail</strong> 方法</p>
 
@@ -689,11 +673,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-34">
+        <li id="section-33">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链</p>
 
@@ -708,11 +692,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-35">
+        <li id="section-34">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>each</strong> 方法</p>
 
@@ -725,11 +709,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-36">
+        <li id="section-35">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
 <code>dArray</code>, <code>dIterator</code> 来自于上一链的 <strong>cont</strong>，下同</p>
@@ -744,11 +728,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-37">
+        <li id="section-36">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>eachSeries</strong> 方法</p>
 
@@ -765,11 +749,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-38">
+        <li id="section-37">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>parallel</strong> 方法</p>
 
@@ -786,11 +770,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-39">
+        <li id="section-38">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <p><strong>Thenjs</strong> 对象上的 <strong>series</strong> 方法</p>
 
@@ -807,11 +791,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-40">
+        <li id="section-39">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <p>对外输出的主函数</p>
 
@@ -822,11 +806,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-41">
+        <li id="section-40">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <p>使用 new 则同步生成一个 <strong>Thenjs</strong> 对象</p>
 
@@ -834,7 +818,8 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> run = <span class="hljs-keyword">this</span> <span class="hljs-keyword">instanceof</span> thenjs ? carry : defer;
     <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(cont)</span> {</span>
-      <span class="hljs-keyword">if</span> (startFn) run(cont, startFn, cont);
+      <span class="hljs-keyword">if</span> (!startFn) <span class="hljs-keyword">return</span> cont();
+      run(cont, startFn, cont);
     }, <span class="hljs-literal">null</span>, debug);
   }
 
@@ -874,11 +859,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-42">
+        <li id="section-41">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>串行任务流嵌套深度达到<code>maxTickDepth</code>时，强制异步执行，
 用于避免同步任务流过深导致的<code>Maximum call stack size exceeded</code></p>
@@ -890,11 +875,11 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
         </li>
 
 
-        <li id="section-43">
+        <li id="section-42">
             <div class="annotation">
 
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>全局 error 监听</p>
 
