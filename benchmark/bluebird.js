@@ -28,24 +28,29 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // bluebird 测试主体
-    Bluebird.map(list, function (i) { // 并行 list 队列
-      return task();
-    }).then(function () { // 串行 list 队列
-      return Bluebird.reduce(list, function (x, i) {
+    Bluebird.
+      map(list, function (i) { // 并行 list 队列
         return task();
-      }, 1);
-    }).then(function () { // 并行 tasks 队列
-      return Bluebird.all(tasks.map(function (subTask) {
-        return subTask();
-      }));
-    }).then(function () {  // 串行 tasks 队列
-      return tasks.reduce(function (promise, subTask) {
-        return promise.then(function () {
+      }).
+      then(function () { // 串行 list 队列
+        return Bluebird.reduce(list, function (x, i) {
+          return task(i);
+        }, 1);
+      }).
+      then(function () { // 并行 tasks 队列
+        return Bluebird.all(tasks.map(function (subTask) {
           return subTask();
-        });
-      }, Bluebird.resolve());
-    }).then(function () {
-      return callback();
-    });
+        }));
+      }).
+      then(function () {  // 串行 tasks 队列
+        return tasks.reduce(function (promise, subTask) {
+          return promise.then(function () {
+            return subTask();
+          });
+        }, Bluebird.resolve());
+      }).
+      then(function () {
+        return callback();
+      });
   };
 };

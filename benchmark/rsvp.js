@@ -1,16 +1,18 @@
 'use strict';
-/*global Promise */
+/*global console*/
+
+var RSVP = require('rsvp');
 
 module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
     task = function () {
-      return Promise.resolve(1);
+      return RSVP.resolve(1);
     };
   } else { // 模拟异步任务
     task = function () {
-      return new Promise(function (resolve) {
+      return new RSVP.Promise(function (resolve) {
         setImmediate(function () {
           resolve(1);
         });
@@ -25,8 +27,8 @@ module.exports = function (len, syncMode) {
   }
 
   return function (callback) {
-    // 原生 Promise 测试主体
-    Promise.
+    // RSVP 测试主体
+    RSVP.
       all(list.map(function (i) { // 并行 list 队列
         return task();
       })).
@@ -35,17 +37,17 @@ module.exports = function (len, syncMode) {
           return promise.then(function () {
             return task();
           });
-        }, Promise.resolve());
+        }, RSVP.resolve());
       }).
       then(function () { // 并行 tasks 队列
-        return Promise.all(tasks);
+        return RSVP.all(tasks);
       }).
       then(function () { // 串行 tasks 队列
         return tasks.reduce(function (promise, subTask) {
           return promise.then(function () {
             return subTask();
           });
-        }, Promise.resolve());
+        }, RSVP.resolve(1));
       }).
       then(function () {
         callback();

@@ -1,16 +1,18 @@
 'use strict';
-/*global Promise */
+/*global console*/
+
+var when = require('when');
 
 module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
     task = function () {
-      return Promise.resolve(1);
+      return when.resolve(1);
     };
   } else { // 模拟异步任务
     task = function () {
-      return new Promise(function (resolve) {
+      return when.promise(function (resolve) {
         setImmediate(function () {
           resolve(1);
         });
@@ -25,30 +27,30 @@ module.exports = function (len, syncMode) {
   }
 
   return function (callback) {
-    // 原生 Promise 测试主体
-    Promise.
-      all(list.map(function (i) { // 并行 list 队列
+    // when 测试主体
+    when.
+      map(list, function (i) { // 并行 list 队列
         return task();
-      })).
+      }).
       then(function () { // 串行 list 队列
-        return list.reduce(function (promise, i) {
-          return promise.then(function () {
-            return task();
-          });
-        }, Promise.resolve());
+        return when.reduce(list, function (x, i) {
+          return task(i);
+        }, 1);
       }).
       then(function () { // 并行 tasks 队列
-        return Promise.all(tasks);
+        return when.all(tasks.map(function (subTask) {
+          return subTask();
+        }));
       }).
-      then(function () { // 串行 tasks 队列
+      then(function () {  // 串行 tasks 队列
         return tasks.reduce(function (promise, subTask) {
           return promise.then(function () {
             return subTask();
           });
-        }, Promise.resolve());
+        }, when.resolve(1));
       }).
       then(function () {
-        callback();
+        return callback();
       });
   };
 };
