@@ -1,4 +1,4 @@
-then.js 1.1.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（3.72KB）！
 

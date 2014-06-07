@@ -1,4 +1,4 @@
-// v1.1.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -62,11 +62,9 @@
     });
   }
 
-  // 设置 `debug` 方法
-  function setDebug(debug) {
-    prototype.debug = typeof debug === 'function' ? debug : function () {
-      console.log.apply(console, arguments);
-    };
+  // 默认的 `debug` 方法
+  function defaultDebug() {
+    console.log.apply(console, arguments);
   }
 
   // 核心 **continuation** 方法
@@ -127,7 +125,10 @@
     // 标记 cont，cont 作为 handler 时不会被注入 cont，见 `wrapTaskHandler`
     cont._isCont = true;
     // 设置并开启 debug 模式
-    if (debug) then._chain = (setDebug(debug), 1);
+    if (debug) {
+      prototype.debug = typeof debug === 'function' ? debug : defaultDebug;
+      then._chain = 1;
+    }
     // 注入 cont，初始化 handler
     fn(cont, ctx);
     if (!ctx) return then;
@@ -345,6 +346,7 @@
   // 全局 error 监听
   thenjs.onerror = function (error) {
     console.error('thenjs caught error: ', error);
+    throw error;
   };
   return thenjs;
 }));
