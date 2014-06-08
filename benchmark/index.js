@@ -12,14 +12,14 @@ var jsbench = new JSBench();
 if (typeof Promise === 'function') {
   jsbench.add('Promise', require('./promise.js')(len, syncMode));
 } else {
-  console.log('Not support Promise!')
+  console.log('Not support Promise!');
 }
 
 try { // 检测是否支持 generator，是则加载 co 测试
   var check = new Function('return function*(){}');
   jsbench.add('co', require('./co.js')(len, syncMode));
 } catch (e) {
-  console.log('Not support generator!')
+  console.log('Not support generator!');
 }
 
 jsbench.

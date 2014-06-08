@@ -35,10 +35,7 @@ module.exports = function (len, syncMode) {
       }).
       parallel(tasks). // 并行 tasks 队列
       series(tasks). // 串行 tasks 队列
-      all(function (cont, error) {
-        callback(error);
-      }).
-      fail(function (cont, error) {
+      fin(function (cont, error) {
         callback(error);
       });
   };

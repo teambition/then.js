@@ -1,4 +1,4 @@
-then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.1.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（3.72KB）！
 
@@ -10,7 +10,7 @@ then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 1. 可以像标准的 `Promise` 那样，把N多异步回调函数写成一个长长的 `then` 链，并且比 Promise 更简洁自然。因为如果使用标准 Promise 的 then 链，其中的异步函数都必须转换成 Promise，thenjs 则无需转换，像使用 callback 一样执行异步函数即可。
 
-2. 可以像 `async`那样实现同步或异步队列函数，并且比 async 更方便。因为 async 的队列是一个个独立体，而 thenjs 的队列在 `Then` 链上，可形成链式调用。
+2. 可以像 `async`那样实现同步或异步队列函数，并且比 async 更方便。因为 async 的队列是一个个独立体，而 thenjs 的队列在 `Thenjs` 链上，可形成链式调用。
 
 3. 强大的 Error 机制，可以捕捉任何同步或异步的异常错误，甚至是位于异步函数中的语法错误。并且捕捉的错误任君处置。
 
@@ -87,7 +87,7 @@ then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
       function (cont) { task(88, cont); }, // 队列第一个是异步任务
       function (cont) { cont(null, 99); } // 第二个是同步任务
     ]).
-    all(function (cont, error, result) {
+    finally(function (cont, error, result) {
       console.log(error, result); // 输出 null [88, 99]
     });
 
@@ -114,25 +114,25 @@ then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 ## API
 
-**以下所有的 'cont'，取义于 `continue`。'cont' 绑定到了下一个 `Then` 链，即收集当前任务结果，继续执行下一链。它等效于 node.js 的 `callback`，可以接受多个参数，其中第一个参数为 'error'。**
+**以下所有的 'cont'，取义于 `continue`。'cont' 绑定到了下一个 `Thenjs` 链，即收集当前任务结果，继续执行下一链。它等效于 node.js 的 `callback`，可以接受多个参数，其中第一个参数为 'error'。**
 
 ### thenjs(startFn, [debug])
 
-执行 `startFn`，返回一个新的 `Then` 对象.
+执行 `startFn`，返回一个新的 `Thenjs` 对象.
 
 + **startFn:** Function，function (cont) {}
 + **debug:** Boolean 或 Function，可选，开启调试模式，将每一个链的运行结果用 `debug` 函数处理，如果debug为非函数真值，则调用 `console.log`，下同
 
 ### thenjs.each(array, iterator, [debug])
 
-将 `array` 中的值应用于 `iterator` 函数（同步或异步），并行执行。返回一个新的 `Then` 对象。
+将 `array` 中的值应用于 `iterator` 函数（同步或异步），并行执行。返回一个新的 `Thenjs` 对象。
 
 + **array:** Array
 + **iterator:** Function，function (cont, value, index, array) {}
 
 ### thenjs.eachSeries(array, iterator, [debug])
 
-将 `array` 中的值应用于 `iterator` 函数（同步或异步），串行执行。返回一个新的 `Then` 对象。
+将 `array` 中的值应用于 `iterator` 函数（同步或异步），串行执行。返回一个新的 `Thenjs` 对象。
 
 + **array:** Array,
 + **iterator:** Function，function (cont, value, index, array) {}
@@ -140,53 +140,59 @@ then.js 1.1.3 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 ### thenjs.parallel(taskFnArray, [debug])
 
-`taskFnArray` 是一个函数（同步或异步）数组，并行执行。返回一个新的 `Then` 对象。
+`taskFnArray` 是一个函数（同步或异步）数组，并行执行。返回一个新的 `Thenjs` 对象。
 
 + **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
 
 ### thenjs.series(taskFnArray, [debug])
 
-`taskFnArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Then` 对象。
+`taskFnArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Thenjs` 对象。
 
 + **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
 ### Then.prototype.then(successHandler, [errorHandler])
 
-如果上一链正确，则进入 `successHandler` 执行，否则进入 `errorHandler` 执行。返回一个新的 `Then` 对象。
+如果上一链正确，则进入 `successHandler` 执行，否则进入 `errorHandler` 执行。返回一个新的 `Thenjs` 对象。
 
 + **successHandler:** Function，function (cont, value1, value2, ...) {}
 + **errorHandler:** Function，可选，function (cont, error) {}
 
-### Then.prototype.all(allHandler)
+### Then.prototype.finally(finallyHandler)
 
-无论上一链是否存在 `error`，均进入 `allHandler` 执行，等效于 `.then(successHandler, errorHandler)`。返回一个新的 `Then` 对象。
+别名：Then.prototype.fin(finallyHandler)
 
-+ **allHandler:** Function，function (cont, error, value1, value2, ...) {}
+原名`all`建议不要使用，以后将停用。
+
+无论上一链是否存在 `error`，均进入 `finallyHandler` 执行，等效于 `.then(successHandler, errorHandler)`。返回一个新的 `Thenjs` 对象。
+
++ **finallyHandler:** Function，function (cont, error, value1, value2, ...) {}
 
 ### Then.prototype.fail(errorHandler)
 
-`fail` 用于捕捉 `error`，如果在它之前的任意一个链上产生了 `error`，并且未被 `then`, `all` 等捕获，则会跳过中间链，直接进入 `fail`。返回一个新的 `Then` 对象。
+别名：Then.prototype.catch(errorHandler)
+
+`fail` 用于捕捉 `error`，如果在它之前的任意一个链上产生了 `error`，并且未被 `then`, `finally` 等捕获，则会跳过中间链，直接进入 `fail`。返回一个新的 `Thenjs` 对象。
 
 + **errorHandler:** Function，function (cont, error) {}
 
 ### Then.prototype.each(array, iterator)
 
-参数类似 `thenjs.each`，返回一个新的 `Then` 对象。
+参数类似 `thenjs.each`，返回一个新的 `Thenjs` 对象。
 
 不同在于，参数可省略，如果没有参数，则会查找上一个链的输出结果作为参数，即上一个链可以这样 `cont(null, array, iterator)` 传输参数到each。下面三个队列方法行为类似。
 
 ### Then.prototype.eachSeries(array, iterator)
 
-参数类似 `thenjs.eachSeries`，返回一个新的 `Then` 对象。
+参数类似 `thenjs.eachSeries`，返回一个新的 `Thenjs` 对象。
 
 ### Then.prototype.parallel(taskFnArray)
 
-参数类似 `thenjs.parallel`，返回一个新的 `Then` 对象。
+参数类似 `thenjs.parallel`，返回一个新的 `Thenjs` 对象。
 
 ### Then.prototype.series(taskFnArray)
 
-参数类似 `thenjs.series`，返回一个新的 `Then` 对象。
+参数类似 `thenjs.series`，返回一个新的 `Thenjs` 对象。
 
 ### thenjs.nextTick(callback, arg1, arg2, ...)
 

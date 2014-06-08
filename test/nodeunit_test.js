@@ -57,8 +57,8 @@ function testThen(test, num) {
       test.strictEqual(err, num, 'Test errorHandler');
       asnycTask(num, num, cont);
     }).
-    all(function (cont, err, result) {
-      test.strictEqual(err, num, 'Test all');
+    fin(function (cont, err, result) {
+      test.strictEqual(err, num, 'Test finally');
       test.equal(result, num);
       cont(null, [num, num + 1, num + 2]);
     }).
@@ -90,12 +90,12 @@ function testThen(test, num) {
 exports.testThen = function (test) {
   var list = getArray(1000);
   var test1 = thenjs.each(list, function (cont, value) {
-    testThen(test, value).all(function (cont2, error, result) {
+    testThen(test, value).fin(function (cont2, error, result) {
       cont(error, result);
     });
   });
   var test2 = test1.eachSeries(null, function (cont, value) {
-    testThen(test, value).all(cont);
+    testThen(test, value).fin(cont);
   });
   var test3 = test2.then(function (cont, result) {
     test.deepEqual(result, list, 'Test each and eachSeries');

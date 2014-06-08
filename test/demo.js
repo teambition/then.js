@@ -37,6 +37,6 @@
       function (cont) { task(88, cont); }, // 队列第一个是异步任务
       function (cont) { cont(null, 99); } // 第二个是同步任务
     ]).
-    all(function (cont, error, result) {
+    fin(function (cont, error, result) {
       console.log(error, result); // 输出 null [88, 99]
     });
