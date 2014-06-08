@@ -27,7 +27,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v1.1.2 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v1.1.4 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
@@ -163,14 +163,12 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
               </div>
-              <p>设置 <code>debug</code> 方法</p>
+              <p>默认的 <code>debug</code> 方法</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setDebug</span><span class="hljs-params">(debug)</span> {</span>
-    prototype.debug = <span class="hljs-keyword">typeof</span> debug === <span class="hljs-string">'function'</span> ? debug : <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
-      console.log.apply(console, <span class="hljs-built_in">arguments</span>);
-    };
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">defaultDebug</span><span class="hljs-params">()</span> {</span>
+    console.log.apply(console, <span class="hljs-built_in">arguments</span>);
   }</pre></div></div>
 
         </li>
@@ -246,7 +244,7 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
   }
 
   <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">continuationExec</span><span class="hljs-params">(ctx, result, error)</span> {</span>
-    <span class="hljs-keyword">if</span> (ctx._all) <span class="hljs-keyword">return</span> ctx._all.apply(<span class="hljs-literal">null</span>, result);
+    <span class="hljs-keyword">if</span> (ctx._finally) <span class="hljs-keyword">return</span> ctx._finally.apply(<span class="hljs-literal">null</span>, result);
     <span class="hljs-keyword">if</span> (error != <span class="hljs-literal">null</span>) <span class="hljs-keyword">throw</span> error;
 
     <span class="hljs-keyword">var</span> success = ctx._success || ctx._each || ctx._eachSeries || ctx._parallel || ctx._series;
@@ -384,7 +382,10 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (debug) then._chain = (setDebug(debug), <span class="hljs-number">1</span>);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (debug) {
+      prototype.debug = <span class="hljs-keyword">typeof</span> debug === <span class="hljs-string">'function'</span> ? debug : defaultDebug;
+      then._chain = <span class="hljs-number">1</span>;
+    }</pre></div></div>
 
         </li>
 
@@ -623,13 +624,13 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
-              <p><strong>Thenjs</strong> 对象上的 <strong>all</strong> 方法</p>
+              <p><strong>Thenjs</strong> 对象上的 <strong>finally</strong> 方法，<code>all</code> 将废弃</p>
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>  prototype.all = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(allHandler)</span> {</span>
+            <div class="content"><div class='highlight'><pre>  prototype.fin = prototype.all = prototype.finally = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(finallyHandler)</span> {</span>
     <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(cont, self)</span> {</span>
-      self._all = wrapTaskHandler(cont, allHandler);
+      self._finally = wrapTaskHandler(cont, finallyHandler);
     }, <span class="hljs-keyword">this</span>);
   };</pre></div></div>
 
@@ -666,7 +667,7 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>  prototype.fail = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(errorHandler)</span> {</span>
+            <div class="content"><div class='highlight'><pre>  prototype.fail = prototype.catch = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(errorHandler)</span> {</span>
     <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(cont, self)</span> {</span>
       self._fail = wrapTaskHandler(cont, errorHandler);</pre></div></div>
 
@@ -887,6 +888,7 @@ MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, �
 
             <div class="content"><div class='highlight'><pre>  thenjs.onerror = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(error)</span> {</span>
     console.error(<span class="hljs-string">'thenjs caught error: '</span>, error);
+    <span class="hljs-keyword">throw</span> error;
   };
   <span class="hljs-keyword">return</span> thenjs;
 }));</pre></div></div>

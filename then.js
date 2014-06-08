@@ -1,4 +1,4 @@
-// v1.1.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.1.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -62,11 +62,9 @@
     });
   }
 
-  // 设置 `debug` 方法
-  function setDebug(debug) {
-    prototype.debug = typeof debug === 'function' ? debug : function () {
-      console.log.apply(console, arguments);
-    };
+  // 默认的 `debug` 方法
+  function defaultDebug() {
+    console.log.apply(console, arguments);
   }
 
   // 核心 **continuation** 方法
@@ -92,7 +90,7 @@
   }
 
   function continuationExec(ctx, result, error) {
-    if (ctx._all) return ctx._all.apply(null, result);
+    if (ctx._finally) return ctx._finally.apply(null, result);
     if (error != null) throw error;
 
     var success = ctx._success || ctx._each || ctx._eachSeries || ctx._parallel || ctx._series;
@@ -127,7 +125,10 @@
     // 标记 cont，cont 作为 handler 时不会被注入 cont，见 `wrapTaskHandler`
     cont._isCont = true;
     // 设置并开启 debug 模式
-    if (debug) then._chain = (setDebug(debug), 1);
+    if (debug) {
+      prototype.debug = typeof debug === 'function' ? debug : defaultDebug;
+      then._chain = 1;
+    }
     // 注入 cont，初始化 handler
     fn(cont, ctx);
     if (!ctx) return then;
@@ -233,10 +234,10 @@
     array[0](next, 0, array);
   }
 
-  // **Thenjs** 对象上的 **all** 方法
-  prototype.all = function (allHandler) {
+  // **Thenjs** 对象上的 **finally** 方法，`all` 将废弃
+  prototype.fin = prototype.all = prototype.finally = function (finallyHandler) {
     return thenFactory(function (cont, self) {
-      self._all = wrapTaskHandler(cont, allHandler);
+      self._finally = wrapTaskHandler(cont, finallyHandler);
     }, this);
   };
 
@@ -249,7 +250,7 @@
   };
 
   // **Thenjs** 对象上的 **fail** 方法
-  prototype.fail = function (errorHandler) {
+  prototype.fail = prototype.catch = function (errorHandler) {
     return thenFactory(function (cont, self) {
       self._fail = wrapTaskHandler(cont, errorHandler);
       // 对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链
@@ -345,6 +346,7 @@
   // 全局 error 监听
   thenjs.onerror = function (error) {
     console.error('thenjs caught error: ', error);
+    throw error;
   };
   return thenjs;
 }));
