@@ -38,7 +38,9 @@ module.exports = function (len, syncMode) {
         }, Promise.resolve());
       }).
       then(function () { // 并行 tasks 队列
-        return Promise.all(tasks);
+        return Promise.all(tasks.map(function (subTask) {
+          return subTask();
+        }));
       }).
       then(function () { // 串行 tasks 队列
         return tasks.reduce(function (promise, subTask) {

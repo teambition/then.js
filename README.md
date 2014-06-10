@@ -1,4 +1,4 @@
-then.js 1.1.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.1.5 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（3.72KB）！
 
@@ -20,27 +20,56 @@ then.js 1.1.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 `node benchmark/index.js`，centos 虚拟机中测试结果：
 
-    [root@centos then.js]# node benchmark/index.js
+    [root@centos then.js]# node --harmony benchmark/index
 
-    JSBench Async Results:
-    Promise: 100 cycles, 82.21 ms/cycle, 12.16 ops/sec
-    bluebird: 100 cycles, 26.65 ms/cycle, 37.52 ops/sec
-    async: 100 cycles, 19 ms/cycle, 52.63 ops/sec
-    thenjs: 100 cycles, 17.89 ms/cycle, 55.90 ops/sec
-    co: 100 cycles, 17.68 ms/cycle, 56.56 ops/sec
+    JSBench Start (100 cycles, async mode):
+    Test Promise...
+    Test co...
+    Test bluebird...
+    Test when...
+    Test RSVP...
+    Test async...
+    Test thenjs...
+    Test Q...
 
-    Promise: 100%; bluebird: 308.48%; async: 432.68%; thenjs: 459.53%; co: 464.99%;
+    JSBench Results:
+    Q: 100 cycles, 873.29 ms/cycle, 1.15 ops/sec
+    Promise: 100 cycles, 98.52 ms/cycle, 10.15 ops/sec
+    when: 100 cycles, 45.79 ms/cycle, 21.84 ops/sec
+    RSVP: 100 cycles, 34.34 ms/cycle, 29.12 ops/sec
+    bluebird: 100 cycles, 31.87 ms/cycle, 31.38 ops/sec
+    async: 100 cycles, 22.79 ms/cycle, 43.88 ops/sec
+    co: 100 cycles, 18.59 ms/cycle, 53.79 ops/sec
+    thenjs: 100 cycles, 15.3 ms/cycle, 65.36 ops/sec
+
+    Q: 100%; Promise: 886.41%; when: 1907.16%; RSVP: 2543.07%; bluebird: 2740.16%; async: 3831.90%; co: 4697.63%; thenjs: 5707.78%;
+
+    JSBench Completed!
 
 
-    JSBench Sync Results:
-    Promise: 100 cycles, 57.38 ms/cycle, 17.43 ops/sec
-    async: 100 cycles, 5.94 ms/cycle, 168.35 ops/sec
-    thenjs: 100 cycles, 3.52 ms/cycle, 284.09 ops/sec
-    co: 100 cycles, 3.25 ms/cycle, 307.69 ops/sec
-    bluebird: 100 cycles, 2.52 ms/cycle, 396.83 ops/sec
+    [root@centos then.js]# node --harmony benchmark/index
 
-    Promise: 100%; async: 965.99%; thenjs: 1630.11%; co: 1765.54%; bluebird: 2276.98%;
+    JSBench Start (100 cycles, async mode):
+    Test Promise...
+    Test co...
+    Test bluebird...
+    Test when...
+    Test RSVP...
+    Test async...
+    Test thenjs...
+    Test Q...
 
+    JSBench Results:
+    Q: 100 cycles, 90.03 ms/cycle, 11.11 ops/sec
+    Promise: 100 cycles, 80.72 ms/cycle, 12.39 ops/sec
+    async: 100 cycles, 5.65 ms/cycle, 176.99 ops/sec
+    when: 100 cycles, 3.9 ms/cycle, 256.41 ops/sec
+    co: 100 cycles, 3.33 ms/cycle, 300.30 ops/sec
+    RSVP: 100 cycles, 2.99 ms/cycle, 334.45 ops/sec
+    bluebird: 100 cycles, 2.59 ms/cycle, 386.10 ops/sec
+    thenjs: 100 cycles, 1.63 ms/cycle, 613.50 ops/sec
+
+    Q: 100%; Promise: 111.53%; async: 1593.45%; when: 2308.46%; co: 2703.60%; RSVP: 3011.04%; bluebird: 3476.06%; thenjs: 5523.31%;
 
 **测试结果在不同环境下各有浮动，但得分对比差不多**
 

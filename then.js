@@ -1,4 +1,4 @@
-// v1.1.4 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.1.5 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -20,7 +20,7 @@
 }(this, function () {
   'use strict';
 
-  var slice = Array.prototype.slice, toString = Object.prototype.toString,
+  var maxTickDepth, toString = Object.prototype.toString,
     // nextTick 用于异步执行函数，避免 `Maximum call stack size exceeded`
     // MutationObserver 和 MessageChannel 目前不适合用来模拟 setImmediate, 无法正常 GC
     nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
@@ -30,8 +30,19 @@
       return toString.call(obj) === '[object Array]';
     };
 
+  // 将 `arguments` 转成数组，效率比 `[].slice.call` 高很多
+  function slice(args, start) {
+    var ret = [], len = args.length;
+    start = start || 0;
+    while (len-- > start) ret[len - start] = args[len];
+    return ret;
+  }
+
   // ## **Thenjs** 构造函数
-  function Thenjs() {}
+  function Thenjs() {
+    this._success = this._each = this._eachSeries = this._parallel = this._series = null;
+    this._finally = this._error = this._fail = this._result = this._chain = this._nextThen = null;
+  }
 
   var prototype = Thenjs.prototype;
 
@@ -44,7 +55,7 @@
   // 同步执行函数，同时捕捉异常
   function carry(errorHandler, fn) {
     try {
-      fn.apply(null, slice.call(arguments, 2));
+      fn.apply(null, slice(arguments, 2));
     } catch (error) {
       errorHandler(error);
     }
@@ -52,7 +63,7 @@
 
   // 异步执行函数，同时捕捉异常
   function defer(errorHandler, fn) {
-    var args = slice.call(arguments, 2);
+    var args = slice(arguments, 2);
     nextTick(function () {
       try {
         fn.apply(null, args);
@@ -71,22 +82,30 @@
   // **continuation** 收集任务结果，触发下一个链，它被注入各个 handler
   // 其参数采用 **node.js** 的 **callback** 形式：(error, arg1, arg2, ...)
   function continuation(error) {
-    var self = this;
+    var self = this, args = arguments;
+
+    function run() {
+      try {
+        continuationExec(self, args, error);
+      } catch (err) {
+        // 异步处理 `err`，防止处理过程自身形成 `Maximum call stack size exceeded`
+        nextTick(function () {
+          continuationError(self, err, error);
+        });
+      }
+    }
 
     // then链上的结果已经处理，若重复执行 cont 则直接跳过；
     if (self._result === false) return;
     // 第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；
     if (!self._result && self._chain) {
-      self.debug.apply(self, ['\nChain ' + self._chain + ': '].concat(slice.call(arguments)));
+      self.debug.apply(self, ['\nChain ' + self._chain + ': '].concat(slice(args)));
     }
     // 标记已进入 continuation 处理
     self._result = false;
-
-    try {
-      continuationExec(self, arguments, error);
-    } catch (err) {
-      continuationError(self, err, error);
-    }
+    if (--maxTickDepth > 0) return run();
+    maxTickDepth = +thenjs.maxTickDepth;
+    nextTick(run);
   }
 
   function continuationExec(ctx, result, error) {
@@ -94,15 +113,15 @@
     if (error != null) throw error;
 
     var success = ctx._success || ctx._each || ctx._eachSeries || ctx._parallel || ctx._series;
-    if (success) return success.apply(null, slice.call(result, 1));
+    if (success) return success.apply(null, slice(result, 1));
     // 对于正确结果，**Thenjs** 链上没有相应 handler 处理，则在 **Thenjs** 链上保存结果，等待下一次处理。
     ctx._result = result;
   }
 
   function continuationError(ctx, err, error) {
-    var _nextThen = ctx, errorHandler = ctx._error || ctx._fail;
-    // 本次 continuation 捕捉的 error，直接放到下一链处理
-    if (ctx._nextThen && error == null) return continuation.call(ctx._nextThen, err);
+    var _nextThen = ctx._nextThen, errorHandler = ctx._error || ctx._fail;
+    // 本次 continuation 捕捉的 error，直接放到后面的链处理
+    if (_nextThen && error == null) errorHandler = null;
     // 获取本链的 error handler 或者链上后面的fail handler
     while (!errorHandler && _nextThen) {
       errorHandler = _nextThen._fail;
@@ -146,7 +165,7 @@
   // 封装 handler，`_isCont` 判定 handler 是不是 `cont` ，不是则将 `cont` 注入成第一个参数
   function wrapTaskHandler(cont, handler) {
     return handler._isCont ? handler : function () {
-      handler.apply(null, [cont].concat(slice.call(arguments)));
+      handler.apply(null, [cont].concat(slice(arguments)));
     };
   }
 
@@ -193,18 +212,17 @@
   // ## **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`cont` 处理最后结果
   function eachSeries(cont, array, iterator) {
-    var i = 0, end, result = [], run, stack, maxTickDepth = +thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack = +thenjs.maxTickDepth;
 
     function next(error, value) {
       if (error != null) return cont(error);
       result[i] = value;
       if (++i > end) return cont(null, result);
       // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
-      run = --stack ? carry : (stack = maxTickDepth, defer);
+      run = --stack > 0 ? carry : (stack = +thenjs.maxTickDepth, defer);
       run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
-    stack = maxTickDepth = maxTickDepth >= 1 ? maxTickDepth : 100;
 
     if (!isArray(array)) return cont(errorify(array, 'eachSeries'));
     end = array.length - 1;
@@ -215,18 +233,17 @@
   // ## **series** 函数
   // 串行执行一组 `array` 任务，`cont` 处理最后结果
   function series(cont, array) {
-    var i = 0, end, result = [], run, stack, maxTickDepth = +thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack = +thenjs.maxTickDepth;
 
     function next(error, value) {
       if (error != null) return cont(error);
       result[i] = value;
       if (++i > end) return cont(null, result);
       // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
-      run = --stack ? carry : (stack = maxTickDepth, defer);
+      run = --stack > 0 ? carry : (stack = +thenjs.maxTickDepth, defer);
       run(cont, array[i], next, i, array);
     }
     next._isCont = true;
-    stack = maxTickDepth = maxTickDepth >= 1 ? maxTickDepth : 100;
 
     if (!isArray(array)) return cont(errorify(array, 'series'));
     end = array.length - 1;
@@ -255,7 +272,7 @@
       self._fail = wrapTaskHandler(cont, errorHandler);
       // 对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链
       self._success = function () {
-        cont.apply(null, [null].concat(slice.call(arguments)));
+        cont.apply(null, [null].concat(slice(arguments)));
       };
     }, this);
   };
@@ -333,7 +350,7 @@
   };
 
   thenjs.nextTick = function (fn) {
-    var args = slice.call(arguments, 1);
+    var args = slice(arguments, 1);
     nextTick(function () {
       fn.apply(null, args);
     });
@@ -342,7 +359,7 @@
   thenjs.defer = defer;
   // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，
   // 用于避免同步任务流过深导致的`Maximum call stack size exceeded`
-  thenjs.maxTickDepth = 100;
+  maxTickDepth = thenjs.maxTickDepth = 100;
   // 全局 error 监听
   thenjs.onerror = function (error) {
     console.error('thenjs caught error: ', error);
