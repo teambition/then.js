@@ -1,7 +1,7 @@
 'use strict';
 /*global */
 
-var thenjs = require('../then.js');
+var Thenjs = require('../then.js');
 
 module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
@@ -25,8 +25,8 @@ module.exports = function (len, syncMode) {
   }
 
   return function (callback) {
-    // thenjs 测试主体
-    thenjs.
+    // Thenjs 测试主体
+    Thenjs.
       each(list, function (cont, i) { // 并行 list 队列
         task(cont);
       }).

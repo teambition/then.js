@@ -1,10 +1,10 @@
 'use strict';
 /*global module, process*/
 
-var thenjs = require('../then.js'),
+var Thenjs = require('../then.js'),
   slice = [].slice;
 
-thenjs.onerror = null;
+Thenjs.onerror = null;
 
 function getArray(length) {
   // 生成有序数组
@@ -19,13 +19,13 @@ function getArray(length) {
 function asnycTask() {
   // 虚拟异步回调任务，最后一个参数为callback，异步返回callback之前的所有参数
   var args = slice.call(arguments), callback = args.pop();
-  thenjs.nextTick(function () {
+  Thenjs.nextTick(function () {
     callback.apply(null, args);
   });
 }
 
 function testThen(test, num) {
-  return thenjs.
+  return Thenjs.
     parallel([
       function (cont) {
         asnycTask(null, num, cont);
@@ -89,7 +89,7 @@ function testThen(test, num) {
 
 exports.testThen = function (test) {
   var list = getArray(1000);
-  var test1 = thenjs.each(list, function (cont, value) {
+  var test1 = Thenjs.each(list, function (cont, value) {
     testThen(test, value).fin(function (cont2, error, result) {
       cont(error, result);
     });
@@ -101,7 +101,7 @@ exports.testThen = function (test) {
     test.deepEqual(result, list, 'Test each and eachSeries');
     cont(list);
   });
-  thenjs.nextTick(function () {
+  Thenjs.nextTick(function () {
     test3.fail(function (cont, err) {
       test.strictEqual(err, list, 'None error');
       test.done();

@@ -8,6 +8,8 @@ var JSBench = require('jsbench'),
 
 var jsbench = new JSBench();
 
+console.log((syncMode ? 'Sync' : 'Async') + ' Benchmark...');
+
 // 如果支持 Promise，则加入 Promise 测试
 if (typeof Promise === 'function') {
   jsbench.add('Promise', require('./promise.js')(len, syncMode));
@@ -29,5 +31,5 @@ jsbench.
   add('async', require('./async.js')(len, syncMode)).
   add('thenjs', require('./then.js')(len, syncMode)).
   add('Q', require('./q.js')(len, syncMode)).
-  // on('cycle', function (e) {console.log(e.name, e.cycle)}).
+  // on('cycle', function (e) {console.log(e.name, e.cycle, e.time + 'ms')}).
   run(cycles);
