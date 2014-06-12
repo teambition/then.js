@@ -27,7 +27,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v1.2.0 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v1.2.1 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
@@ -510,7 +510,7 @@
   }
 
   <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">continuationError</span><span class="hljs-params">(ctx, err, error)</span> {</span>
-    <span class="hljs-keyword">var</span> _nextThen = ctx._nextThen, errorHandler = ctx._error || ctx._fail;</pre></div></div>
+    <span class="hljs-keyword">var</span> _nextThen = ctx, errorHandler = ctx._error || ctx._fail;</pre></div></div>
 
         </li>
 
@@ -525,7 +525,10 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (_nextThen &amp;&amp; error == <span class="hljs-literal">null</span>) errorHandler = <span class="hljs-literal">null</span>;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (ctx._nextThen &amp;&amp; error == <span class="hljs-literal">null</span>) {
+      errorHandler = <span class="hljs-literal">null</span>;
+      _nextThen = ctx._nextThen;
+    }</pre></div></div>
 
         </li>
 
