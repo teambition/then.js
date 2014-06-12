@@ -7,7 +7,7 @@
 // **License:** MIT
 
 /* global module, define, setImmediate, console */
-(function (root, factory) {
+;(function (root, factory) {
   'use strict';
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
