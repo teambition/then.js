@@ -1,6 +1,6 @@
-then.js 1.2.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
-小巧、简单、强大的链式异步编程工具（3.72KB）！
+小巧、简单、强大的链式异步编程工具（4.11KB）！
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 

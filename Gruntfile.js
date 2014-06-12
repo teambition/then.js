@@ -19,7 +19,7 @@ module.exports = function(grunt) {
       options: {
         jshintrc: '.jshintrc'
       },
-      build: ['then.js', 'Gruntfile.js', 'test/*.js'],
+      build: ['then.js', 'Gruntfile.js', 'test/*.js', 'examples/*.js'],
       test: ['benchmark/*.js']
     },
 
@@ -34,7 +34,7 @@ module.exports = function(grunt) {
     },
 
     nodeunit: {
-      all: ['test/nodeunit_test.js']
+      all: ['test/nodeunit.js']
     }
 
   });

@@ -1,4 +1,4 @@
-// v1.2.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -218,9 +218,12 @@
   }
 
   function continuationError(ctx, err, error) {
-    var _nextThen = ctx._nextThen, errorHandler = ctx._error || ctx._fail;
+    var _nextThen = ctx, errorHandler = ctx._error || ctx._fail;
     // 本次 continuation 捕捉的 error，直接放到后面的链处理
-    if (_nextThen && error == null) errorHandler = null;
+    if (ctx._nextThen && error == null) {
+      errorHandler = null;
+      _nextThen = ctx._nextThen;
+    }
     // 获取本链的 error handler 或者链上后面的fail handler
     while (!errorHandler && _nextThen) {
       errorHandler = _nextThen._fail;
