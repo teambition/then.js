@@ -1,4 +1,4 @@
-then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.3.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（4.11KB）！
 
@@ -80,7 +80,7 @@ then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 **`async` 和 `co` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
 
-## DEMO
+## Demo
 
     'use strict';
     /*global console*/
@@ -146,9 +146,9 @@ then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 ### Thenjs(start, [debug])
 
-主构造函数，返回一个新的 `Thenjs` 对象。当 `start` 为函数时则执行，否则将其当作正确结果输入下一链。
+主构造函数，返回一个新的 `Thenjs` 对象。
 
-+ **start:** Function，function (cont) {}，或者其它值
++ **start:** Function，function (cont) {}, 即 `thunk` 函数（见下面解释），或者 `Promise` 对象，或者 `Thenjs` 对象，或者其他值。
 + **debug:** Boolean 或 Function，可选，开启调试模式，将每一个链的运行结果用 `debug` 函数处理，如果debug为非函数真值，则调用 `console.log`，下同
 
 ### Thenjs.each(array, iterator, [debug])
@@ -222,6 +222,10 @@ then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 参数类似 `Thenjs.series`，返回一个新的 `Thenjs` 对象。
 
+### Thenjs.prototype.thunk(callback)
+
+无返回值。将 `Thenjs` 对象变成一个 `thunk`， 当 `Thenjs` 对象任务执行完毕后，结果会进入 `callback` 执行。`callback` 的第一个参数仍然是 `error`。
+
 ### Thenjs.nextTick(callback, arg1, arg2, ...)
 
 工具函数，类似于 `node.js` 的 `setImmediate`，异步执行 `callback`，而 `arg1`, `arg2` 会成为它的运行参数。
@@ -239,6 +243,11 @@ then.js 1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 ### Thenjs.maxTickDepth = 100;
 
 全局配置参数， 默认值为 `100`。如果同步任务串行执行，嵌套深度达到一定值时，javascript 会报错 `Maximum call stack size exceeded`，`Thenjs.maxTickDepth` 就是为了解决这个问题，当串行任务流执行深度达到 `maxTickDepth` 值时，强制异步执行一次。
+
+
+### Thunk
+
+**`thunk`** 这一概念，我最初见于 **TJ Holowaychuk** 的 [co](https://github.com/visionmedia/co)。**`thunk`** 是一个被封装了同步或异步任务的函数，这个函数有唯一一个参数 `callback`。运行 **`thunk`**后，当其封装的任务执行完毕时，任务结果会输入 `callback` 执行。`callback` 的第一个参数是 `error`，没有发生 `error` 则为 `null`。
 
 
 ### Who Used
