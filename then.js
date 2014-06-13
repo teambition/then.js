@@ -1,4 +1,4 @@
-// v1.2.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.3.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -7,7 +7,7 @@
 // **License:** MIT
 
 /* global module, define, setImmediate, console */
-(function (root, factory) {
+;(function (root, factory) {
   'use strict';
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
@@ -61,14 +61,30 @@
   // ## **Thenjs** 主函数
   function Thenjs(start, debug) {
     var self = this, cont;
+    if (start instanceof Thenjs) return start;
     if (!(self instanceof Thenjs)) return new Thenjs(start, debug);
     self._success = self._each = self._eachSeries = self._parallel = self._series = null;
     self._finally = self._error = self._fail = self._result = self._nextThen = self._chain = null;
     if (!arguments.length) return self;
 
     cont = genContinuation(self, debug);
-    if (typeof start !== 'function') cont(null, start == null ? null : start);
-    else carry(cont, start, cont);
+    try {
+      if (typeof start === 'function') {
+        start(cont);
+      } else if (start == null) {
+        cont();
+      } else if (start.thunk) {
+        start.thunk(cont);
+      } else if (start.constructor && start.constructor.name === 'Promise') {
+        start.then(function(res) {
+          cont(null, res);
+        }, cont);
+      } else {
+        cont(null, start);
+      }
+    } catch (error) {
+      cont(error);
+    }
   }
 
   Thenjs.each = function (array, iterator, debug) {
@@ -113,6 +129,7 @@
   };
 
   var prototype = Thenjs.prototype;
+  prototype.name = 'Thenjs';
   // **Thenjs** 对象上的 **finally** 方法，`all` 将废弃
   prototype.fin = prototype.all = prototype.finally = function (finallyHandler) {
     return thenFactory(function (cont, self) {
@@ -177,6 +194,16 @@
     }, this);
   };
 
+  // **Thenjs** 对象上的 **toThunk** 方法
+  prototype.thunk = function (callback) {
+    if (this._result) {
+      callback.apply(null, this._result);
+      this._result = false;
+    } else if (this._result !== false) {
+      this._finally = callback;
+    }
+  };
+
   // 核心 **continuation** 方法
   // **continuation** 收集任务结果，触发下一个链，它被注入各个 handler
   // 其参数采用 **node.js** 的 **callback** 形式：(error, arg1, arg2, ...)
@@ -207,14 +234,14 @@
     nextTick(run);
   }
 
-  function continuationExec(ctx, result, error) {
-    if (ctx._finally) return ctx._finally.apply(null, result);
+  function continuationExec(ctx, args, error) {
+    if (ctx._finally) return ctx._finally.apply(null, args);
     if (error != null) throw error;
 
     var success = ctx._success || ctx._each || ctx._eachSeries || ctx._parallel || ctx._series;
-    if (success) return success.apply(null, slice(result, 1));
+    if (success) return success.apply(null, slice(args, 1));
     // 对于正确结果，**Thenjs** 链上没有相应 handler 处理，则在 **Thenjs** 链上保存结果，等待下一次处理。
-    ctx._result = result;
+    ctx._result = args;
   }
 
   function continuationError(ctx, err, error) {
