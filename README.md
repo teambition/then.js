@@ -1,4 +1,4 @@
-then.js 1.3.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+then.js 1.3.1 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（4.11KB）！
 
@@ -222,7 +222,7 @@ then.js 1.3.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=ma
 
 参数类似 `Thenjs.series`，返回一个新的 `Thenjs` 对象。
 
-### Thenjs.prototype.thunk(callback)
+### Thenjs.prototype.toThunk()(callback)
 
 无返回值。将 `Thenjs` 对象变成一个 `thunk`， 当 `Thenjs` 对象任务执行完毕后，结果会进入 `callback` 执行。`callback` 的第一个参数仍然是 `error`。
 

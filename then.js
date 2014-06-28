@@ -1,4 +1,4 @@
-// v1.3.0 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.3.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -15,7 +15,7 @@
   } else if (typeof define === 'function' && define.amd) {
     define([], factory);
   } else {
-    root.thenjs = root.Thenjs = factory();
+    root.Thenjs = factory();
   }
 }(this, function () {
   'use strict';
@@ -73,8 +73,8 @@
         start(cont);
       } else if (start == null) {
         cont();
-      } else if (start.thunk) {
-        start.thunk(cont);
+      } else if (typeof start.toThunk === 'function') {
+        start.toThunk()(cont);
       } else if (start.constructor && start.constructor.name === 'Promise') {
         start.then(function(res) {
           cont(null, res);
@@ -86,6 +86,13 @@
       cont(error);
     }
   }
+
+  Thenjs.NAME = 'Thenjs';
+  Thenjs.VERSION = '1.3.1';
+  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，
+  // 用于避免同步任务流过深导致的`Maximum call stack size exceeded`
+  Thenjs.maxTickDepth = maxTickDepth;
+  Thenjs.defer = defer;
 
   Thenjs.each = function (array, iterator, debug) {
     return thenFactory(function (cont) {
@@ -118,10 +125,6 @@
     });
   };
 
-  Thenjs.defer = defer;
-  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，
-  // 用于避免同步任务流过深导致的`Maximum call stack size exceeded`
-  Thenjs.maxTickDepth = maxTickDepth;
   // 全局 error 监听
   Thenjs.onerror = function (error) {
     console.error('Thenjs caught error: ', error);
@@ -129,7 +132,6 @@
   };
 
   var prototype = Thenjs.prototype;
-  prototype.name = 'Thenjs';
   // **Thenjs** 对象上的 **finally** 方法，`all` 将废弃
   prototype.fin = prototype.all = prototype.finally = function (finallyHandler) {
     return thenFactory(function (cont, self) {
@@ -195,13 +197,16 @@
   };
 
   // **Thenjs** 对象上的 **toThunk** 方法
-  prototype.thunk = function (callback) {
-    if (this._result) {
-      callback.apply(null, this._result);
-      this._result = false;
-    } else if (this._result !== false) {
-      this._finally = callback;
-    }
+  prototype.toThunk = function () {
+    var self = this;
+    return function (callback) {
+      if (self._result) {
+        callback.apply(null, self._result);
+        self._result = false;
+      } else if (self._result !== false) {
+        self._finally = callback;
+      }
+    };
   };
 
   // 核心 **continuation** 方法
@@ -220,7 +225,6 @@
         });
       }
     }
-
     // then链上的结果已经处理，若重复执行 cont 则直接跳过；
     if (self._result === false) return;
     // 第一次进入 continuation，若为 debug 模式则执行，对于同一结果保证 debug 只执行一次；
@@ -322,7 +326,6 @@
     if (!isArray(array)) return cont(errorify(array, 'each'));
     counter.i = end = array.length - 1;
     if (end < 0) return cont(null, result);
-
     for (var i = 0; i <= end; i++) {
       iterator(parallelNext(cont, result, counter, i), array[i], i, array);
     }
@@ -336,7 +339,6 @@
     if (!isArray(array)) return cont(errorify(array, 'parallel'));
     counter.i = end = array.length - 1;
     if (end < 0) return cont(null, result);
-
     for (var i = 0; i <= end; i++) {
       array[i](parallelNext(cont, result, counter, i), i, array);
     }
@@ -356,7 +358,6 @@
       run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
-
     if (!isArray(array)) return cont(errorify(array, 'eachSeries'));
     end = array.length - 1;
     if (end < 0) return cont(null, result);
@@ -377,7 +378,6 @@
       run(cont, array[i], next, i, array);
     }
     next._isCont = true;
-
     if (!isArray(array)) return cont(errorify(array, 'series'));
     end = array.length - 1;
     if (end < 0) return cont(null, result);

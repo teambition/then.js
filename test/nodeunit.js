@@ -130,7 +130,21 @@ exports.testThen = function (test) {
   });
   var test3 = test2.then(function (cont, result) {
     test.deepEqual(result, list, 'Test each and eachSeries');
-    cont(list);
+    Thenjs(1).toThunk()(function (err, value) {
+      test.strictEqual(err, null);
+      test.strictEqual(value, 1);
+    });
+    var thunk = Thenjs(function (cont2) {
+      Thenjs.nextTick(function (a, b) {
+        test.strictEqual(a, 1);
+        test.strictEqual(b, 2);
+        cont2(null, [a, b]);
+      }, 1, 2);
+    }).toThunk();
+    Thenjs(thunk).then(function (cont2, result) {
+      test.deepEqual(result, [1, 2]);
+      cont(list);
+    });
   });
   Thenjs.nextTick(function () {
     test3.fail(function (cont, err) {
