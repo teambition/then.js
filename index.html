@@ -27,7 +27,7 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
-              <p>v1.3.0 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
+              <p>v1.3.1 <a href="https://travis-ci.org/zensh/then.js"><img src="https://travis-ci.org/zensh/then.js.png?branch=master" alt="Build Status"></a></p>
 <p>小巧、简单、强大的链式异步编程工具！</p>
 <p><strong>Github:</strong> <a href="https://github.com/teambition/then.js">https://github.com/teambition/then.js</a></p>
 <p><strong>License:</strong> MIT</p>
@@ -45,7 +45,7 @@
   } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> define === <span class="hljs-string">'function'</span> &amp;&amp; define.amd) {
     define([], factory);
   } <span class="hljs-keyword">else</span> {
-    root.thenjs = root.Thenjs = factory();
+    root.Thenjs = factory();
   }
 }(<span class="hljs-keyword">this</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
 <span class="hljs-pi">
@@ -152,8 +152,8 @@
         start(cont);
       } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (start == <span class="hljs-literal">null</span>) {
         cont();
-      } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (start.thunk) {
-        start.thunk(cont);
+      } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> start.toThunk === <span class="hljs-string">'function'</span>) {
+        start.toThunk()(cont);
       } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (start.constructor &amp;&amp; start.constructor.name === <span class="hljs-string">'Promise'</span>) {
         start.then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(res)</span> {</span>
           cont(<span class="hljs-literal">null</span>, res);
@@ -165,6 +165,26 @@
       cont(error);
     }
   }
+
+  Thenjs.NAME = <span class="hljs-string">'Thenjs'</span>;
+  Thenjs.VERSION = <span class="hljs-string">'1.3.1'</span>;</pre></div></div>
+
+        </li>
+
+
+        <li id="section-6">
+            <div class="annotation">
+
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>串行任务流嵌套深度达到<code>maxTickDepth</code>时，强制异步执行，
+用于避免同步任务流过深导致的<code>Maximum call stack size exceeded</code></p>
+
+            </div>
+
+            <div class="content"><div class='highlight'><pre>  Thenjs.maxTickDepth = maxTickDepth;
+  Thenjs.defer = defer;
 
   Thenjs.each = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(array, iterator, debug)</span> {</span>
     <span class="hljs-keyword">return</span> thenFactory(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(cont)</span> {</span>
@@ -195,25 +215,7 @@
     nextTick(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
       fn.apply(<span class="hljs-literal">null</span>, args);
     });
-  };
-
-  Thenjs.defer = defer;</pre></div></div>
-
-        </li>
-
-
-        <li id="section-6">
-            <div class="annotation">
-
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-6">&#182;</a>
-              </div>
-              <p>串行任务流嵌套深度达到<code>maxTickDepth</code>时，强制异步执行，
-用于避免同步任务流过深导致的<code>Maximum call stack size exceeded</code></p>
-
-            </div>
-
-            <div class="content"><div class='highlight'><pre>  Thenjs.maxTickDepth = maxTickDepth;</pre></div></div>
+  };</pre></div></div>
 
         </li>
 
@@ -233,8 +235,7 @@
     <span class="hljs-keyword">throw</span> error;
   };
 
-  <span class="hljs-keyword">var</span> prototype = Thenjs.prototype;
-  prototype.name = <span class="hljs-string">'Thenjs'</span>;</pre></div></div>
+  <span class="hljs-keyword">var</span> prototype = Thenjs.prototype;</pre></div></div>
 
         </li>
 
@@ -423,13 +424,16 @@
 
             </div>
 
-            <div class="content"><div class='highlight'><pre>  prototype.thunk = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(callback)</span> {</span>
-    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._result) {
-      callback.apply(<span class="hljs-literal">null</span>, <span class="hljs-keyword">this</span>._result);
-      <span class="hljs-keyword">this</span>._result = <span class="hljs-literal">false</span>;
-    } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>._result !== <span class="hljs-literal">false</span>) {
-      <span class="hljs-keyword">this</span>._finally = callback;
-    }
+            <div class="content"><div class='highlight'><pre>  prototype.toThunk = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> {</span>
+    <span class="hljs-keyword">var</span> self = <span class="hljs-keyword">this</span>;
+    <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(callback)</span> {</span>
+      <span class="hljs-keyword">if</span> (self._result) {
+        callback.apply(<span class="hljs-literal">null</span>, self._result);
+        self._result = <span class="hljs-literal">false</span>;
+      } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (self._result !== <span class="hljs-literal">false</span>) {
+        self._finally = callback;
+      }
+    };
   };</pre></div></div>
 
         </li>
@@ -777,7 +781,6 @@
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'each'</span>));
     counter.i = end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
-
     <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
       iterator(parallelNext(cont, result, counter, i), array[i], i, array);
     }
@@ -803,7 +806,6 @@
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'parallel'</span>));
     counter.i = end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
-
     <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt;= end; i++) {
       array[i](parallelNext(cont, result, counter, i), i, array);
     }
@@ -848,7 +850,6 @@
       run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = <span class="hljs-literal">true</span>;
-
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'eachSeries'</span>));
     end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
@@ -894,7 +895,6 @@
       run(cont, array[i], next, i, array);
     }
     next._isCont = <span class="hljs-literal">true</span>;
-
     <span class="hljs-keyword">if</span> (!isArray(array)) <span class="hljs-keyword">return</span> cont(errorify(array, <span class="hljs-string">'series'</span>));
     end = array.length - <span class="hljs-number">1</span>;
     <span class="hljs-keyword">if</span> (end &lt; <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> cont(<span class="hljs-literal">null</span>, result);
