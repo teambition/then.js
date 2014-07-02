@@ -1,4 +1,4 @@
-// v1.3.1 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
+// v1.3.2 [![Build Status](https://travis-ci.org/zensh/then.js.png?branch=master)](https://travis-ci.org/zensh/then.js)
 //
 // 小巧、简单、强大的链式异步编程工具！
 //
@@ -131,16 +131,16 @@
     throw error;
   };
 
-  var prototype = Thenjs.prototype;
+  var proto = Thenjs.prototype;
   // **Thenjs** 对象上的 **finally** 方法，`all` 将废弃
-  prototype.fin = prototype.all = prototype.finally = function (finallyHandler) {
+  proto.fin = proto.all = proto['finally'] = function (finallyHandler) {
     return thenFactory(function (cont, self) {
       self._finally = wrapTaskHandler(cont, finallyHandler);
     }, this);
   };
 
   // **Thenjs** 对象上的 **then** 方法
-  prototype.then = function (successHandler, errorHandler) {
+  proto.then = function (successHandler, errorHandler) {
     return thenFactory(function (cont, self) {
       self._success = wrapTaskHandler(cont, successHandler);
       self._error = errorHandler && wrapTaskHandler(cont, errorHandler);
@@ -148,7 +148,7 @@
   };
 
   // **Thenjs** 对象上的 **fail** 方法
-  prototype.fail = prototype.catch = function (errorHandler) {
+  proto.fail = proto['catch'] = function (errorHandler) {
     return thenFactory(function (cont, self) {
       self._fail = wrapTaskHandler(cont, errorHandler);
       // 对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链
@@ -159,7 +159,7 @@
   };
 
   // **Thenjs** 对象上的 **each** 方法
-  prototype.each = function (array, iterator) {
+  proto.each = function (array, iterator) {
     return thenFactory(function (cont, self) {
       self._each = function (dArray, dIterator) {
         // 优先使用定义的参数，如果没有定义参数，则从上一链结果从获取
@@ -170,7 +170,7 @@
   };
 
   // **Thenjs** 对象上的 **eachSeries** 方法
-  prototype.eachSeries = function (array, iterator) {
+  proto.eachSeries = function (array, iterator) {
     return thenFactory(function (cont, self) {
       self._eachSeries = function (dArray, dIterator) {
         eachSeries(cont, array || dArray, iterator || dIterator);
@@ -179,7 +179,7 @@
   };
 
   // **Thenjs** 对象上的 **parallel** 方法
-  prototype.parallel = function (array) {
+  proto.parallel = function (array) {
     return thenFactory(function (cont, self) {
       self._parallel = function (dArray) {
         parallel(cont, array || dArray);
@@ -188,7 +188,7 @@
   };
 
   // **Thenjs** 对象上的 **series** 方法
-  prototype.series = function (array) {
+  proto.series = function (array) {
     return thenFactory(function (cont, self) {
       self._series = function (dArray) {
         series(cont, array || dArray);
@@ -197,7 +197,7 @@
   };
 
   // **Thenjs** 对象上的 **toThunk** 方法
-  prototype.toThunk = function () {
+  proto.toThunk = function () {
     var self = this;
     return function (callback) {
       if (self._result) {
@@ -275,7 +275,7 @@
     cont._isCont = true;
     // 设置并开启 debug 模式
     if (debug) {
-      prototype.debug = typeof debug === 'function' ? debug : defaultDebug;
+      proto.debug = typeof debug === 'function' ? debug : defaultDebug;
       ctx._chain = 1;
     }
     return cont;
