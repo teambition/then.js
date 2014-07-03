@@ -1,4 +1,4 @@
-then.js 1.3.2 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
+then.js 1.3.3 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（4.11KB）！
 

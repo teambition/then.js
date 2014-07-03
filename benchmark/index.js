@@ -30,6 +30,7 @@ jsbench.
   add('RSVP', require('./rsvp.js')(len, syncMode)).
   add('async', require('./async.js')(len, syncMode)).
   add('thenjs', require('./then.js')(len, syncMode)).
+  add('thunks', require('./thunks.js')(len, syncMode)).
   add('Q', require('./q.js')(len, syncMode)).
   // on('cycle', function (e) {console.log(e.name, e.cycle, e.time + 'ms')}).
   run(cycles);
