@@ -1,4 +1,4 @@
-then.js 1.3.3 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
+then.js 1.3.4 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
 ====
 小巧、简单、强大的链式异步编程工具（4.11KB）！
 
@@ -239,10 +239,6 @@ then.js 1.3.3 [![Build Status](https://travis-ci.org/teambition/then.js.png?bran
 ### Thenjs.onerror = function (error) {};
 
 全局配置参数，用户可自定义的全局 error 监听函数，`Thenjs.onerror` 默认值为 `undefined`。若定义，当执行链上发生 `error` 且没有被捕捉时，`error` 会进入 `Thenjs.onerror`。
-
-### Thenjs.maxTickDepth = 100;
-
-全局配置参数， 默认值为 `100`。如果同步任务串行执行，嵌套深度达到一定值时，javascript 会报错 `Maximum call stack size exceeded`，`Thenjs.maxTickDepth` 就是为了解决这个问题，当串行任务流执行深度达到 `maxTickDepth` 值时，强制异步执行一次。
 
 
 ### Thunk

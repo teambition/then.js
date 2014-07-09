@@ -83,9 +83,6 @@
     }
   }
 
-  // 串行任务流嵌套深度达到`maxTickDepth`时，强制异步执行，
-  // 用于避免同步任务流过深导致的`Maximum call stack size exceeded`
-  Thenjs.maxTickDepth = maxTickDepth;
   Thenjs.defer = defer;
 
   Thenjs.each = function (array, iterator, debug) {
@@ -336,14 +333,14 @@
   // ## **eachSeries** 函数
   // 将一组数据 `array` 分发给任务迭代函数 `iterator`，串行执行，`cont` 处理最后结果
   function eachSeries(cont, array, iterator) {
-    var i = 0, end, result = [], run, stack = +Thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack = maxTickDepth;
 
     function next(error, value) {
       if (error != null) return cont(error);
       result[i] = value;
       if (++i > end) return cont(null, result);
       // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
-      run = --stack > 0 ? carry : (stack = +Thenjs.maxTickDepth, defer);
+      run = --stack > 0 ? carry : (stack = maxTickDepth, defer);
       run(cont, iterator, next, array[i], i, array);
     }
     next._isCont = true;
@@ -356,14 +353,14 @@
   // ## **series** 函数
   // 串行执行一组 `array` 任务，`cont` 处理最后结果
   function series(cont, array) {
-    var i = 0, end, result = [], run, stack = +Thenjs.maxTickDepth;
+    var i = 0, end, result = [], run, stack = maxTickDepth;
 
     function next(error, value) {
       if (error != null) return cont(error);
       result[i] = value;
       if (++i > end) return cont(null, result);
       // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
-      run = --stack > 0 ? carry : (stack = +Thenjs.maxTickDepth, defer);
+      run = --stack > 0 ? carry : (stack = maxTickDepth, defer);
       run(cont, array[i], next, i, array);
     }
     next._isCont = true;
@@ -384,6 +381,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.3.3';
+  Thenjs.VERSION = '1.3.4';
   return Thenjs;
 }));
