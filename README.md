@@ -1,6 +1,7 @@
 then.js 1.3.4 [![Build Status](https://travis-ci.org/teambition/then.js.png?branch=master)](https://travis-ci.org/teambition/then.js)
 ====
-小巧、简单、强大的链式异步编程工具（4.11KB）！
+The fastest, smallest, fully compatible, full-featured asynchronous module!
+
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
