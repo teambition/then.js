@@ -27,8 +27,7 @@
 
   // 将 `arguments` 转成数组，效率比 `[].slice.call` 高很多
   function slice(args, start) {
-    var ret = [], len = args && args.length;
-    if (!len) return ret;
+    var len = args.length, ret = Array(len);
     start = start || 0;
     while (len-- > start) ret[len - start] = args[len];
     return ret;
