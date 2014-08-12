@@ -13,7 +13,7 @@
   } else {
     root.Thenjs = factory();
   }
-}(this, function () {
+}(typeof window === 'object' ? window : this, function () {
   'use strict';
 
   var maxTickDepth = 100,
@@ -381,6 +381,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.3.4';
+  Thenjs.VERSION = '1.3.7';
   return Thenjs;
 }));
