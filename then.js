@@ -54,6 +54,18 @@
     });
   }
 
+  function toThunk(object) {
+    if (object == null) return object;
+    if (typeof object.toThunk === 'function') return object.toThunk();
+    if (typeof object.then === 'function') {
+      return function (callback) {
+        object.then(function(res) {
+          callback(null, res);
+        }, callback);
+      };
+    } else return object;
+  }
+
   // ## **Thenjs** 主函数
   function Thenjs(start, debug) {
     var self = this, cont;
@@ -64,22 +76,12 @@
     if (!arguments.length) return self;
 
     cont = genContinuation(self, debug);
-    try {
-      if (typeof start === 'function') {
-        start(cont);
-      } else if (start == null) {
-        cont();
-      } else if (typeof start.toThunk === 'function') {
-        start.toThunk()(cont);
-      } else if (typeof start.then === 'function') {
-        start.then(function(res) {
-          cont(null, res);
-        }, cont);
-      } else {
-        cont(null, start);
-      }
-    } catch (error) {
-      cont(error);
+    start = toThunk(start);
+    if (start == null) cont();
+    else if (typeof start === 'function') {
+      defer(cont, start, cont);
+    } else {
+      cont(null, start);
     }
   }
 
@@ -381,6 +383,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.3.7';
+  Thenjs.VERSION = '1.4.0';
   return Thenjs;
 }));

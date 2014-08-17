@@ -11,6 +11,7 @@
   "undef": true,
   "unused": false,
   "validthis": true,
+  "esnext": true,
 
   "strict": true,
   "globalstrict": true,
