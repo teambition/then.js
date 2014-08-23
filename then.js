@@ -44,13 +44,9 @@
 
   // 异步执行函数，同时捕捉异常
   function defer(errorHandler, fn) {
-    var args = slice(arguments, 2);
+    var args = arguments;
     nextTick(function () {
-      try {
-        fn.apply(null, args);
-      } catch (error) {
-        errorHandler(error);
-      }
+      carry.apply(null, args);
     });
   }
 
@@ -216,14 +212,10 @@
     }
     // 标记已进入 continuation 处理
     self._result = false;
-    try {
-      continuationExec(self, args, error);
-    } catch (err) {
-      // 异步处理 `err`，防止处理过程自身形成 `Maximum call stack size exceeded`
-      nextTick(function () {
-        continuationError(self, err, error);
-      });
-    }
+
+    carry(function (err) {
+      continuationError(self, err, error);
+    }, continuationExec, self, args, error);
   }
 
   function continuationExec(ctx, args, error) {
@@ -383,6 +375,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.0';
+  Thenjs.VERSION = '1.4.1';
   return Thenjs;
 }));
