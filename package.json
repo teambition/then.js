@@ -1,7 +1,7 @@
 {
   "name": "thenjs",
   "main": "then.js",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "authors": [
     "Yan Qing <admin@zensh.com>"
@@ -36,12 +36,19 @@
     "async": ">=0.9.0",
     "bluebird": ">=1.2.4",
     "co": ">=3.0.0",
-    "q": ">=1.0.1",
     "rsvp": ">=3.0.6",
     "when": ">=3.2.2",
     "thunks": ">=0.6.x"
   },
   "scripts": {
     "test": "grunt test"
-  }
+  },
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "benchmark",
+    "test",
+    "examples",
+    "Gruntfile.js"
+  ]
 }

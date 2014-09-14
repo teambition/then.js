@@ -74,11 +74,8 @@
     cont = genContinuation(self, debug);
     start = toThunk(start);
     if (start == null) cont();
-    else if (typeof start === 'function') {
-      defer(cont, start, cont);
-    } else {
-      cont(null, start);
-    }
+    else if (typeof start === 'function') defer(cont, start, cont);
+    else cont(null, start);
   }
 
   Thenjs.defer = defer;
@@ -375,6 +372,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.1';
+  Thenjs.VERSION = '1.4.2';
   return Thenjs;
 }));
