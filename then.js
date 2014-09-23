@@ -27,8 +27,9 @@
 
   // 将 `arguments` 转成数组，效率比 `[].slice.call` 高很多
   function slice(args, start) {
-    var len = args.length, ret = Array(len);
     start = start || 0;
+    if (start >= args.length) return [];
+    var len = args.length, ret = Array(len - start);
     while (len-- > start) ret[len - start] = args[len];
     return ret;
   }
@@ -372,6 +373,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.2';
+  Thenjs.VERSION = '1.4.3';
   return Thenjs;
 }));
