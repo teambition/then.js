@@ -280,7 +280,9 @@
   // 封装 handler，`_isCont` 判定 handler 是不是 `cont` ，不是则将 `cont` 注入成第一个参数
   function wrapTaskHandler(cont, handler) {
     return handler._isCont ? handler : function () {
-      handler.apply(null, [cont].concat(slice(arguments)));
+      var args = slice(arguments);
+      args.unshift(cont);
+      handler.apply(null, args);
     };
   }
 
@@ -373,6 +375,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.3';
+  Thenjs.VERSION = '1.4.4';
   return Thenjs;
 }));
