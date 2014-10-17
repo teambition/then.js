@@ -10,14 +10,14 @@ function fileStats(path) {
   };
 }
 
-Thenjs.
-  each(['demo.js', '../then.min.js', '../.gitignore'], function (cont, path) {
+Thenjs
+  .each(['demo.js', '../then.min.js', '../.gitignore'], function (cont, path) {
     fileStats(path)(cont);
-  }).
-  then(function (cont, result) {
+  })
+  .then(function (cont, result) {
     console.log('Success: ', result);
     fileStats('none.js')(cont);
-  }).
-  fail(function (cont, error) {
+  })
+  .fail(function (cont, error) {
     console.error('A file path error: ', error);
   });

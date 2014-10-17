@@ -26,35 +26,34 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // Thunk 测试主体
-    Thunk.
-      all(list.map(function (i) { // 并行 list 队列
-        return Thunk(function (callback) {
-          task(callback);
-        });
-      }))(function () { // 串行 tasks 队列
-        return list.reduce(function (thunk, i) {
-          return thunk(function () {
-            return Thunk(function (callback) {
-              task(callback);
-            });
+    Thunk.all(list.map(function (i) { // 并行 list 队列
+      return Thunk(function (callback) {
+        task(callback);
+      });
+    }))(function () { // 串行 tasks 队列
+      return list.reduce(function (thunk, i) {
+        return thunk(function () {
+          return Thunk(function (callback) {
+            task(callback);
           });
-        }, Thunk(null));
-      })(function () {
-        return Thunk.all(tasks.map(function (sunTask) { // 并行 tasks 队列
+        });
+      }, Thunk(null));
+    })(function () {
+      return Thunk.all(tasks.map(function (sunTask) { // 并行 tasks 队列
+        return Thunk(function (callback) {
+          sunTask(callback);
+        });
+      }));
+    })(function () { // 串行 tasks 队列
+      return tasks.reduce(function (thunk, sunTask) {
+        return thunk(function () {
           return Thunk(function (callback) {
             sunTask(callback);
           });
-        }));
-      })(function () { // 串行 tasks 队列
-        return tasks.reduce(function (thunk, sunTask) {
-          return thunk(function () {
-            return Thunk(function (callback) {
-              sunTask(callback);
-            });
-          });
-        }, Thunk(null));
-      })(function (error, value) {
-        callback(error, value);
-      });
+        });
+      }, Thunk(null));
+    })(function (error, value) {
+      callback(error, value);
+    });
   };
 };

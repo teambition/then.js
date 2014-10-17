@@ -25,8 +25,8 @@ function asnycTask() {
 }
 
 function testThen(test, num) {
-  return Thenjs.
-    parallel([
+  return Thenjs
+    .parallel([
       function (cont) {
         asnycTask(null, num, cont);
       },
@@ -36,52 +36,52 @@ function testThen(test, num) {
       function (cont) {
         asnycTask(null, num + 2, cont);
       }
-    ]).
-    then(function (cont, result) {
+    ])
+    .then(function (cont, result) {
       test.deepEqual(result, [num, num + 1, num + 2], 'Test parallel');
       asnycTask(null, cont);
-    }).
-    series([
+    })
+    .series([
       function (cont) {
         asnycTask(null, num + 3, cont);
       },
       function (cont) {
         asnycTask(null, num + 4, cont);
       }
-    ]).
-    then(function (cont, result) {
+    ])
+    .then(function (cont, result) {
       test.deepEqual(result, [num + 3, num + 4], 'Test series');
       asnycTask(num, cont);
-    }).
-    then(function () {}, function (cont, err) {
+    })
+    .then(function () {}, function (cont, err) {
       test.strictEqual(err, num, 'Test errorHandler');
       asnycTask(num, num, cont);
-    }).
-    fin(function (cont, err, result) {
+    })
+    .fin(function (cont, err, result) {
       test.strictEqual(err, num, 'Test finally');
       test.equal(result, num);
       cont(null, [num, num + 1, num + 2]);
-    }).
-    each(null, function (cont, value, index) {
+    })
+    .each(null, function (cont, value, index) {
       test.equal(value, num + index);
       asnycTask(null, value, cont);
-    }).
-    then(function (cont, result) {
+    })
+    .then(function (cont, result) {
       test.deepEqual(result, [num, num + 1, num + 2], 'Test each');
       asnycTask(null, [num, num + 1, num + 2], function (cont, value, index) {
         test.equal(value, num + index);
         asnycTask(null, value, cont);
       }, cont);
-    }).
-    eachSeries(null, null).
-    then(function (cont, result) {
+    })
+    .eachSeries(null, null)
+    .then(function (cont, result) {
       test.deepEqual(result, [num, num + 1, num + 2], 'Test eachSeries');
       throw num;
-    }).
-    then(function () {
+    })
+    .then(function () {
       test.ok(false, 'This should not run!');
-    }).
-    fail(function (cont, err) {
+    })
+    .fail(function (cont, err) {
       test.strictEqual(err, num, 'Test fail');
       asnycTask(null, num, cont);
     });
@@ -95,7 +95,8 @@ exports.testThen = function (test) {
       test.strictEqual(value, 1);
       cont();
     });
-  }).then(function (cont) {
+  })
+  .then(function (cont) {
     var a = Thenjs(1);
     test.strictEqual(a, Thenjs(a));
     a.then(function (cont2, value) {
@@ -105,7 +106,8 @@ exports.testThen = function (test) {
       });
       cont();
     });
-  }).then(function (cont) {
+  })
+  .then(function (cont) {
     if (typeof Promise === 'function') {
       var p1 = Promise.resolve(true);
       Thenjs(p1).then(function (cont2, value) {
@@ -121,7 +123,8 @@ exports.testThen = function (test) {
     }
   });
   var test1 = test0.each(list, function (cont, value) {
-    testThen(test, value).fin(function (cont2, error, result) {
+    testThen(test, value)
+    .fin(function (cont2, error, result) {
       cont(error, result);
     });
   });

@@ -14,9 +14,9 @@ Thenjs(function (cont) {
       cont();
     },
   ]);
-}).
-series().
-then(function () {
+})
+.series()
+.then(function () {
   console.log('series1 end');
 });
 
@@ -31,18 +31,18 @@ Thenjs(function (cont) {
       cont2();
     },
   ]).fin(cont);
-}).
-then(function () {
+})
+.then(function () {
   console.log('series2 end');
 });
 
 Thenjs(function (cont) {
   cont(null, ['a', 'b', 'c']);
-}).
-eachSeries(null, function (cont, value, index) {
+})
+.eachSeries(null, function (cont, value, index) {
   console.log(value, index);
   cont();
-}).
-then(function () {
+})
+.then(function () {
   console.log('eachSeries end');
 });

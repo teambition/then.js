@@ -26,17 +26,16 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // Thenjs 测试主体
-    Thenjs.
-      each(list, function (cont, i) { // 并行 list 队列
-        task(cont);
-      }).
-      eachSeries(list, function (cont, i) { // 串行 list 队列
-        task(cont);
-      }).
-      parallel(tasks). // 并行 tasks 队列
-      series(tasks). // 串行 tasks 队列
-      fin(function (cont, error) {
-        callback(error);
-      });
+    Thenjs.each(list, function (cont, i) { // 并行 list 队列
+      task(cont);
+    })
+    .eachSeries(list, function (cont, i) { // 串行 list 队列
+      task(cont);
+    })
+    .parallel(tasks) // 并行 tasks 队列
+    .series(tasks) // 串行 tasks 队列
+    .fin(function (cont, error) {
+      callback(error);
+    });
   };
 };

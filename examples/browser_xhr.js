@@ -13,14 +13,14 @@ function request(url) {
   };
 }
 
-Thenjs(request('http://www.w3school.com.cn/')).
-  then(function (cont, data) {
+Thenjs(request('http://www.w3school.com.cn/'))
+  .then(function (cont, data) {
     console.log(data);
     cont(null, data.responseText);
-  }).
-  then(function (cont, data) {
+  })
+  .then(function (cont, data) {
     console.log(data);
-  }).
-  fail(function (cont, error) {
+  })
+  .fail(function (cont, error) {
     console.error(error.statusText);
   });

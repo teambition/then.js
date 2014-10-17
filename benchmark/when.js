@@ -28,29 +28,28 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // when 测试主体
-    when.
-      map(list, function (i) { // 并行 list 队列
-        return task();
-      }).
-      then(function () { // 串行 list 队列
-        return when.reduce(list, function (x, i) {
-          return task(i);
-        }, 1);
-      }).
-      then(function () { // 并行 tasks 队列
-        return when.all(tasks.map(function (subTask) {
+    when.map(list, function (i) { // 并行 list 队列
+      return task();
+    })
+    .then(function () { // 串行 list 队列
+      return when.reduce(list, function (x, i) {
+        return task(i);
+      }, 1);
+    })
+    .then(function () { // 并行 tasks 队列
+      return when.all(tasks.map(function (subTask) {
+        return subTask();
+      }));
+    })
+    .then(function () {  // 串行 tasks 队列
+      return tasks.reduce(function (promise, subTask) {
+        return promise.then(function () {
           return subTask();
-        }));
-      }).
-      then(function () {  // 串行 tasks 队列
-        return tasks.reduce(function (promise, subTask) {
-          return promise.then(function () {
-            return subTask();
-          });
-        }, when.resolve(1));
-      }).
-      then(function () {
-        return callback();
-      });
+        });
+      }, when.resolve(1));
+    })
+    .then(function () {
+      return callback();
+    });
   };
 };

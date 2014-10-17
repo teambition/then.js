@@ -28,29 +28,28 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // RSVP 测试主体
-    RSVP.
-      all(list.map(function (i) { // 并行 list 队列
-        return task();
-      })).
-      then(function () { // 串行 list 队列
-        return list.reduce(function (promise, i) {
-          return promise.then(function () {
-            return task();
-          });
-        }, RSVP.resolve());
-      }).
-      then(function () { // 并行 tasks 队列
-        return RSVP.all(tasks);
-      }).
-      then(function () { // 串行 tasks 队列
-        return tasks.reduce(function (promise, subTask) {
-          return promise.then(function () {
-            return subTask();
-          });
-        }, RSVP.resolve(1));
-      }).
-      then(function () {
-        callback();
-      });
+    RSVP.all(list.map(function (i) { // 并行 list 队列
+      return task();
+    }))
+    .then(function () { // 串行 list 队列
+      return list.reduce(function (promise, i) {
+        return promise.then(function () {
+          return task();
+        });
+      }, RSVP.resolve());
+    })
+    .then(function () { // 并行 tasks 队列
+      return RSVP.all(tasks);
+    })
+    .then(function () { // 串行 tasks 队列
+      return tasks.reduce(function (promise, subTask) {
+        return promise.then(function () {
+          return subTask();
+        });
+      }, RSVP.resolve(1));
+    })
+    .then(function () {
+      callback();
+    });
   };
 };
