@@ -41,6 +41,8 @@ module.exports = function (len, syncMode) {
       for (i = 0, l = tasks.length; i < l; i++) {
         yield tasks[i];
       }
-    })(callback);
+    }).then(function () {
+      callback()
+    }).catch(callback);
   };
 };

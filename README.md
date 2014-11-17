@@ -1,4 +1,4 @@
-then.js 1.4.4 [![Build Status](https://travis-ci.org/teambition/then.js.svg)](https://travis-ci.org/teambition/then.js)
+then.js 1.4.5 [![Build Status](https://travis-ci.org/teambition/then.js.svg)](https://travis-ci.org/teambition/then.js)
 ====
 The fastest, smallest, fully compatible, full-featured asynchronous module!
 

@@ -27,33 +27,19 @@ module.exports = function (len, syncMode) {
   return function (callback) {
     // Thunk 测试主体
     Thunk.all(list.map(function (i) { // 并行 list 队列
-      return Thunk(function (callback) {
-        task(callback);
-      });
+      return task;
     }))(function () { // 串行 tasks 队列
-      return list.reduce(function (thunk, i) {
-        return thunk(function () {
-          return Thunk(function (callback) {
-            task(callback);
-          });
-        });
-      }, Thunk(null));
+      return Thunk.seq(list.map(function (i) {
+        return task;
+      }));
     })(function () {
       return Thunk.all(tasks.map(function (sunTask) { // 并行 tasks 队列
-        return Thunk(function (callback) {
-          sunTask(callback);
-        });
+        return sunTask;
       }));
     })(function () { // 串行 tasks 队列
-      return tasks.reduce(function (thunk, sunTask) {
-        return thunk(function () {
-          return Thunk(function (callback) {
-            sunTask(callback);
-          });
-        });
-      }, Thunk(null));
-    })(function (error, value) {
-      callback(error, value);
-    });
+      return Thunk.seq(tasks.map(function (sunTask) { // 并行 tasks 队列
+        return sunTask;
+      }));
+    })(callback);
   };
 };
