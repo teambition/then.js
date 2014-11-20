@@ -38,7 +38,7 @@
     "co": ">=4.0.0",
     "rsvp": ">=3.0.6",
     "when": ">=3.2.2",
-    "thunks": ">=1.5.1"
+    "thunks": ">=2.0.0"
   },
   "scripts": {
     "test": "grunt test"

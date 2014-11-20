@@ -17,9 +17,11 @@ if (typeof Promise === 'function') {
   console.log('Not support Promise!');
 }
 
-try { // 检测是否支持 generator，是则加载 co 测试
+try { // 检测是否支持 generator
+  /*jshint -W054 */
   var check = new Function('return function*(){}');
   jsbench.add('co', require('./co.js')(len, syncMode));
+  jsbench.add('thunks-generator', require('./thunks-gen.js')(len, syncMode));
 } catch (e) {
   console.log('Not support generator!');
 }
