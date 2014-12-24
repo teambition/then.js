@@ -1,24 +1,35 @@
 'use strict';
 /*global console*/
 
-var when = require('when');
+var When = require('when');
 
 module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
-    task = function () {
-      return when.resolve(1);
+    task = function (x, callback) {
+      callback(null, x);
     };
   } else { // 模拟异步任务
-    task = function () {
-      return when.promise(function (resolve) {
-        setImmediate(function () {
-          resolve(1);
+    task = function (x, callback) {
+      setImmediate(function () {
+        callback(null, x);
+      });
+    };
+  }
+
+  function promiseify(fn) {
+    return function (x) {
+      return new Promise(function (resolve, reject) {
+        fn(i, function (error, value) {
+          if (error) return reject(error);
+          resolve(value);
         });
       });
     };
   }
+
+  task = promiseify(task);
 
   // 构造任务队列
   for (var i = 0; i < len; i++) {
@@ -27,26 +38,26 @@ module.exports = function (len, syncMode) {
   }
 
   return function (callback) {
-    // when 测试主体
-    when.map(list, function (i) { // 并行 list 队列
-      return task();
+    // When 测试主体
+    When.map(list, function (i) { // 并行 list 队列
+      return task(i);
     })
     .then(function () { // 串行 list 队列
-      return when.reduce(list, function (x, i) {
+      return When.reduce(list, function (x, i) {
         return task(i);
       }, 1);
     })
     .then(function () { // 并行 tasks 队列
-      return when.all(tasks.map(function (subTask) {
-        return subTask();
+      return When.all(tasks.map(function (subTask, i) {
+        return subTask(i);
       }));
     })
     .then(function () {  // 串行 tasks 队列
-      return tasks.reduce(function (promise, subTask) {
+      return tasks.reduce(function (promise, subTask, i) {
         return promise.then(function () {
-          return subTask();
+          return subTask(i);
         });
-      }, when.resolve(1));
+      }, When.resolve(1));
     })
     .then(function () {
       return callback();

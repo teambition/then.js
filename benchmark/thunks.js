@@ -7,16 +7,18 @@ module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
-    task = function (callback) {
-      callback(null, 1);
+    task = function (x, callback) {
+      callback(null, x);
     };
   } else { // 模拟异步任务
-    task = function (callback) {
+    task = function (x, callback) {
       setImmediate(function () {
-        callback(null, 1);
+        callback(null, x);
       });
     };
   }
+
+  task = Thunk.thunkify(task);
 
   // 构造任务队列
   for (var i = 0; i < len; i++) {
@@ -27,18 +29,18 @@ module.exports = function (len, syncMode) {
   return function (callback) {
     // Thunk 测试主体
     Thunk.all(list.map(function (i) { // 并行 list 队列
-      return task;
+      return task(i);
     }))(function () { // 串行 tasks 队列
       return Thunk.seq(list.map(function (i) {
-        return task;
+        return task(i);
       }));
     })(function () {
-      return Thunk.all(tasks.map(function (sunTask) { // 并行 tasks 队列
-        return sunTask;
+      return Thunk.all(tasks.map(function (sunTask, i) { // 并行 tasks 队列
+        return sunTask(i);
       }));
     })(function () { // 串行 tasks 队列
-      return Thunk.seq(tasks.map(function (sunTask) { // 并行 tasks 队列
-        return sunTask;
+      return Thunk.seq(tasks.map(function (sunTask, i) { // 并行 tasks 队列
+        return sunTask(i);
       }));
     })(callback);
   };

@@ -375,6 +375,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.5';
+  Thenjs.VERSION = '1.4.6';
   return Thenjs;
 }));

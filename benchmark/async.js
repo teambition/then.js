@@ -7,14 +7,20 @@ module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
-    task = function (callback) {
-      callback(null, 1);
+    task = function (x, callback) {
+      callback(null, x);
     };
   } else { // 模拟异步任务
-    task = function (callback) {
+    task = function (x, callback) {
       setImmediate(function () {
-        callback(null, 1);
+        callback(null, x);
       });
+    };
+  }
+
+  function toThunk(fn, x) {
+    return function (done) {
+      fn(x, done);
     };
   }
 
@@ -27,16 +33,16 @@ module.exports = function (len, syncMode) {
   return function (callback) {
     // async 测试主体
     async.each(list, function (i, next) { // 并行 list 队列
-      task(next);
+      task(i, next);
     }, function (err) {
       if (err) return callback(err);
       async.eachSeries(list, function (i, next) { // 串行 list 队列
-        task(next);
+        task(i, next);
       }, function (err) {
         if (err) return callback(err);
-        async.parallel(tasks, function (err) { // 并行 tasks 队列
+        async.parallel(tasks.map(toThunk), function (err) { // 并行 tasks 队列
           if (err) return callback(err);
-          async.series(tasks, callback); // 串行 tasks 队列
+          async.series(tasks.map(toThunk), callback); // 串行 tasks 队列
         });
       });
     });

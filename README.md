@@ -1,7 +1,6 @@
-then.js 1.4.5 [![Build Status](https://travis-ci.org/teambition/then.js.svg)](https://travis-ci.org/teambition/then.js)
+then.js 1.4.6 [![Build Status](https://travis-ci.org/teambition/then.js.svg)](https://travis-ci.org/teambition/then.js)
 ====
 The fastest, smallest, fully compatible, full-featured asynchronous module!
-
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
@@ -19,67 +18,73 @@ The fastest, smallest, fully compatible, full-featured asynchronous module!
 
 ##Benchmark
 
-`node benchmark/index.js`，centos 虚拟机中测试结果：
+**模拟异步测试：**
 
-    [root@centos then.js]# node benchmark/index
-    Async Benchmark...
+```bash
+➜  then.js git:(master) ✗ node --harmony benchmark/index
+Async Benchmark...
 
-    JSBench Start (100 cycles, async mode):
-    Test Promise...
-    Test co...
-    Test bluebird...
-    Test when...
-    Test RSVP...
-    Test async...
-    Test thenjs...
-    Test Q...
+JSBench Start (1000 cycles, async mode):
+Test Promise...
+Test co...
+Test thunks-generator...
+Test bluebird...
+Test when...
+Test RSVP...
+Test async...
+Test thenjs...
+Test thunks...
 
-    JSBench Results:
-    Q: 100 cycles, 326.27 ms/cycle, 3.065 ops/sec
-    Promise: 100 cycles, 83.26 ms/cycle, 12.011 ops/sec
-    RSVP: 100 cycles, 29.67 ms/cycle, 33.704 ops/sec
-    when: 100 cycles, 28.7 ms/cycle, 34.843 ops/sec
-    bluebird: 100 cycles, 28.63 ms/cycle, 34.928 ops/sec
-    async: 100 cycles, 18.76 ms/cycle, 53.305 ops/sec
-    co: 100 cycles, 18.13 ms/cycle, 55.157 ops/sec
-    thenjs: 100 cycles, 13.16 ms/cycle, 75.988 ops/sec
+JSBench Results:
+co: 1000 cycles, 32.621 ms/cycle, 30.655 ops/sec
+Promise: 1000 cycles, 30.807 ms/cycle, 32.460 ops/sec
+when: 1000 cycles, 28.828 ms/cycle, 34.688 ops/sec
+thunks: 1000 cycles, 17.402 ms/cycle, 57.465 ops/sec
+RSVP: 1000 cycles, 10.358 ms/cycle, 96.544 ops/sec
+thunks-generator: 1000 cycles, 9.822 ms/cycle, 101.812 ops/sec
+bluebird: 1000 cycles, 8.54 ms/cycle, 117.096 ops/sec
+async: 1000 cycles, 6.54 ms/cycle, 152.905 ops/sec
+thenjs: 1000 cycles, 5.085 ms/cycle, 196.657 ops/sec
 
-    Q: 100%; Promise: 391.87%; RSVP: 1099.66%; when: 1136.83%; bluebird: 1139.61%;
-    async: 1739.18%; co: 1799.61%; thenjs: 2479.26%;
+co: 100%; Promise: 105.89%; when: 113.16%; thunks: 187.46%; RSVP: 314.94%; thunks-generator: 332.12%; bluebird: 381.98%; async: 498.79%; thenjs: 641.51%;
 
-    JSBench Completed!
+JSBench Completed!
+```
 
+**模拟异步测试：**
 
-    [root@centos then.js]# node benchmark/index
-    Sync Benchmark...
+```bash
+➜  then.js git:(master) ✗ node --harmony benchmark/index
+Sync Benchmark...
 
-    JSBench Start (100 cycles, async mode):
-    Test Promise...
-    Test co...
-    Test bluebird...
-    Test when...
-    Test RSVP...
-    Test async...
-    Test thenjs...
-    Test Q...
+JSBench Start (1000 cycles, async mode):
+Test Promise...
+Test co...
+Test thunks-generator...
+Test bluebird...
+Test when...
+Test RSVP...
+Test async...
+Test thenjs...
+Test thunks...
 
-    JSBench Results:
-    Q: 100 cycles, 97.51 ms/cycle, 10.255 ops/sec
-    Promise: 100 cycles, 56.63 ms/cycle, 17.658 ops/sec
-    async: 100 cycles, 5.56 ms/cycle, 179.856 ops/sec
-    when: 100 cycles, 4.59 ms/cycle, 217.865 ops/sec
-    co: 100 cycles, 3.43 ms/cycle, 291.545 ops/sec
-    RSVP: 100 cycles, 2.62 ms/cycle, 381.679 ops/sec
-    bluebird: 100 cycles, 2.5 ms/cycle, 400.000 ops/sec
-    thenjs: 100 cycles, 1.7 ms/cycle, 588.235 ops/sec
+JSBench Results:
+co: 1000 cycles, 26.342 ms/cycle, 37.962 ops/sec
+Promise: 1000 cycles, 25.662 ms/cycle, 38.968 ops/sec
+when: 1000 cycles, 21.36 ms/cycle, 46.816 ops/sec
+thunks: 1000 cycles, 5.242 ms/cycle, 190.767 ops/sec
+thunks-generator: 1000 cycles, 5.073 ms/cycle, 197.122 ops/sec
+async: 1000 cycles, 2.806 ms/cycle, 356.379 ops/sec
+RSVP: 1000 cycles, 2.27 ms/cycle, 440.529 ops/sec
+bluebird: 1000 cycles, 1.722 ms/cycle, 580.720 ops/sec
+thenjs: 1000 cycles, 1.324 ms/cycle, 755.287 ops/sec
 
-    Q: 100%; Promise: 172.19%; async: 1753.78%; when: 2124.40%; co: 2842.86%;
-    RSVP: 3721.76%; bluebird: 3900.40%; thenjs: 5735.88%;
+co: 100%; Promise: 102.65%; when: 123.32%; thunks: 502.52%; thunks-generator: 519.26%; async: 938.77%; RSVP: 1160.44%; bluebird: 1529.73%; thenjs: 1989.58%;
 
-    JSBench Completed!
+JSBench Completed!
+```
 
-
-**`async` 和 `co` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
+**`async` 不支持过长（如超过3000）的同步任务（将会出现`Maximum call stack size exceeded`）**
 
 ## Demo
 
@@ -225,7 +230,7 @@ The fastest, smallest, fully compatible, full-featured asynchronous module!
 
 ### Thenjs.prototype.toThunk()(callback)
 
-无返回值。将 `Thenjs` 对象变成一个 `thunk`， 当 `Thenjs` 对象任务执行完毕后，结果会进入 `callback` 执行。`callback` 的第一个参数仍然是 `error`。
+返回 `thunk` 函数。将 `Thenjs` 对象变成一个 `thunk`， 当 `Thenjs` 对象任务执行完毕后，结果会进入 `callback` 执行。`callback` 的第一个参数仍然是 `error`。
 
 ### Thenjs.nextTick(callback, arg1, arg2, ...)
 
@@ -242,9 +247,11 @@ The fastest, smallest, fully compatible, full-featured asynchronous module!
 全局配置参数，用户可自定义的全局 error 监听函数，`Thenjs.onerror` 默认值为 `undefined`。若定义，当执行链上发生 `error` 且没有被捕捉时，`error` 会进入 `Thenjs.onerror`。
 
 
-### Thunk
+## Thunk
 
 **`thunk`** 这一概念，我最初见于 **TJ Holowaychuk** 的 [co](https://github.com/visionmedia/co)。**`thunk`** 是一个被封装了同步或异步任务的函数，这个函数有唯一一个参数 `callback`。运行 **`thunk`**后，当其封装的任务执行完毕时，任务结果会输入 `callback` 执行。`callback` 的第一个参数是 `error`，没有发生 `error` 则为 `null`。
+
+**作者力荐完美的类 `Promise` 的 `thunk` 实现 [thunks](https://github.com/thunks/thunks) 以及基于 `thunks` 的 Web server 框架 [toa](https://github.com/toajs/toa)。**
 
 
 ### Who Used

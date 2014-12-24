@@ -7,14 +7,20 @@ module.exports = function (len, syncMode) {
   var task, list = [], tasks = [];
 
   if (syncMode) { // 模拟同步任务
-    task = function (callback) {
-      callback(null, 1);
+    task = function (x, callback) {
+      callback(null, x);
     };
   } else { // 模拟异步任务
-    task = function (callback) {
+    task = function (x, callback) {
       setImmediate(function () {
-        callback(null, 1);
+        callback(null, x);
       });
+    };
+  }
+
+  function toThunk(fn, x) {
+    return function (done) {
+      fn(x, done);
     };
   }
 
@@ -27,13 +33,13 @@ module.exports = function (len, syncMode) {
   return function (callback) {
     // Thenjs 测试主体
     Thenjs.each(list, function (cont, i) { // 并行 list 队列
-      task(cont);
+      task(i, cont);
     })
     .eachSeries(list, function (cont, i) { // 串行 list 队列
-      task(cont);
+      task(i, cont);
     })
-    .parallel(tasks) // 并行 tasks 队列
-    .series(tasks) // 串行 tasks 队列
+    .parallel(tasks.map(toThunk)) // 并行 tasks 队列
+    .series(tasks.map(toThunk)) // 串行 tasks 队列
     .fin(function (cont, error) {
       callback(error);
     });
