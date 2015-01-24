@@ -1,6 +1,9 @@
-then.js 1.4.6 [![Build Status](https://travis-ci.org/teambition/then.js.svg)](https://travis-ci.org/teambition/then.js)
+then.js
 ====
-The fastest, smallest, fully compatible, full-featured asynchronous module!
+史上最快，与 node callback 完美结合的异步流程控制库!
+
+[![NPM version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
 
 **能用简单优美的方式将任何同步或异步回调函数转换成then()链式调用！**
 
@@ -15,6 +18,12 @@ The fastest, smallest, fully compatible, full-featured asynchronous module!
 3. 强大的 Error 机制，可以捕捉任何同步或异步的异常错误，甚至是位于异步函数中的语法错误。并且捕捉的错误任君处置。
 
 4. 开启debug模式，可以把每一个then链运行结果输出到debug函数（未定义debug函数则用 console.log），方便调试。
+
+## Thunk
+
+**`thunk`** 是一个被封装了同步或异步任务的函数，这个函数有唯一一个参数 `callback`。运行 **`thunk`**后，当其封装的任务执行完毕时，任务结果会输入 `callback` 执行。`callback` 的第一个参数是 `error`，没有发生 `error` 则为 `null`。
+
+**推荐使用新一代异步流程控制库 [thunks](https://github.com/thunks/thunks)，它是比 `co` 更强大的存在！**
 
 ##Benchmark
 
@@ -88,48 +97,49 @@ JSBench Completed!
 
 ## Demo
 
-    'use strict';
-    /*global console*/
+```js
+'use strict';
+/*global console*/
 
-    var Thenjs = require('../then.js');
+var Thenjs = require('../then.js');
 
-    function task(arg, callback) { // 模拟异步任务
-      Thenjs.nextTick(function () {
-        callback(null, arg);
-      });
-    }
+function task(arg, callback) { // 模拟异步任务
+  Thenjs.nextTick(function () {
+    callback(null, arg);
+  });
+}
 
-    Thenjs(function (cont) {
-      task(10, cont);
-    })
-    .then(function (cont, arg) {
-      console.log(arg);
-      cont(new Error('error!'), 123);
-    })
-    .fin(function (cont, error, result) {
-      console.log(error, result);
-      cont();
-    })
-    .each([0, 1, 2], function (cont, value) {
-      task(value * 2, cont); // 并行执行队列任务，把队列 list 中的每一个值输入到 task 中运行
-    })
-    .then(function (cont, result) {
-      console.log(result);
-      cont();
-    })
-    .series([ // 串行执行队列任务
-      function (cont) { task(88, cont); }, // 队列第一个是异步任务
-      function (cont) { cont(null, 99); } // 第二个是同步任务
-    ])
-    .then(function (cont, result) {
-      console.log(result);
-      cont(new Error('error!!'));
-    })
-    .fail(function (cont, error) { // 通常应该在链的最后放置一个 `fail` 方法收集异常
-      console.log(error);
-      console.log('DEMO END!');
-    });
-
+Thenjs(function (cont) {
+  task(10, cont);
+})
+.then(function (cont, arg) {
+  console.log(arg);
+  cont(new Error('error!'), 123);
+})
+.fin(function (cont, error, result) {
+  console.log(error, result);
+  cont();
+})
+.each([0, 1, 2], function (cont, value) {
+  task(value * 2, cont); // 并行执行队列任务，把队列 list 中的每一个值输入到 task 中运行
+})
+.then(function (cont, result) {
+  console.log(result);
+  cont();
+})
+.series([ // 串行执行队列任务
+  function (cont) { task(88, cont); }, // 队列第一个是异步任务
+  function (cont) { cont(null, 99); } // 第二个是同步任务
+])
+.then(function (cont, result) {
+  console.log(result);
+  cont(new Error('error!!'));
+})
+.fail(function (cont, error) { // 通常应该在链的最后放置一个 `fail` 方法收集异常
+  console.log(error);
+  console.log('DEMO END!');
+});
+```
 
 ## Install
 
@@ -157,20 +167,53 @@ JSBench Completed!
 + **start:** Function，function (cont) {}, 即 `thunk` 函数（见下面解释），或者 `Promise` 对象，或者 `Thenjs` 对象，或者其他值。
 + **debug:** Boolean 或 Function，可选，开启调试模式，将每一个链的运行结果用 `debug` 函数处理，如果debug为非函数真值，则调用 `console.log`，下同
 
+```js
+Thenjs().then(function(res) {});
+```
+
+```js
+Thenjs(123).then(function(res) {});
+```
+
+```js
+Thenjs(promise).then(function(res) {});
+```
+
+```js
+Thenjs(function(cont) { cont(result); }).then(function(res) {});
+```
+
 ### Thenjs.each(array, iterator, [debug])
 
 将 `array` 中的值应用于 `iterator` 函数（同步或异步），并行执行。返回一个新的 `Thenjs` 对象。
 
-+ **array:** Array
++ **array:** Array 或 类数组
 + **iterator:** Function，function (cont, value, index, array) {}
+
+```js
+Thenjs.each([0, 1, 2], function (cont, value) {
+  task(value * 2, cont);
+})
+.then(function (cont, result) {
+  console.log(result);
+});
+```
 
 ### Thenjs.eachSeries(array, iterator, [debug])
 
 将 `array` 中的值应用于 `iterator` 函数（同步或异步），串行执行。返回一个新的 `Thenjs` 对象。
 
-+ **array:** Array,
++ **array:** Array 或 类数组
 + **iterator:** Function，function (cont, value, index, array) {}
 
+```js
+Thenjs.eachSeries([0, 1, 2], function (cont, value) {
+  task(value * 2, cont);
+})
+.then(function (cont, result) {
+  console.log(result);
+});
+```
 
 ### Thenjs.parallel(taskFnArray, [debug])
 
@@ -178,12 +221,31 @@ JSBench Completed!
 
 + **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
+```js
+Thenjs.parallel([
+  function (cont) { task(88, cont); },
+  function (cont) { cont(null, 99); }
+])
+.then(function (cont, result) {
+  console.log(result);
+});
+```
 
 ### Thenjs.series(taskFnArray, [debug])
 
 `taskFnArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Thenjs` 对象。
 
 + **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
+
+```js
+Thenjs.series([
+  function (cont) { task(88, cont); },
+  function (cont) { cont(null, 99); }
+])
+.then(function (cont, result) {
+  console.log(result);
+});
+```
 
 ### Thenjs.prototype.then(successHandler, [errorHandler])
 
@@ -192,15 +254,51 @@ JSBench Completed!
 + **successHandler:** Function，function (cont, value1, value2, ...) {}
 + **errorHandler:** Function，可选，function (cont, error) {}
 
+```js
+Thenjs(function (cont) {
+  task(10, cont);
+})
+.then(function (cont, arg) {
+  console.log(arg);
+}, function (cont, error) {
+  console.error(error);
+});
+```
+
 ### Thenjs.prototype.finally(finallyHandler)
 
 别名：Thenjs.prototype.fin(finallyHandler)
 
-原名`all`建议不要使用，以后将停用。
+原名`all`已停用。
 
 无论上一链是否存在 `error`，均进入 `finallyHandler` 执行，等效于 `.then(successHandler, errorHandler)`。返回一个新的 `Thenjs` 对象。
 
 + **finallyHandler:** Function，function (cont, error, value1, value2, ...) {}
+
+`finallyHandler` 也可以是外层的 `cont` 哦，如果是 `cont`, 则不会被注入本层的 cont, 所以，可以这样嵌套用：
+
+```js
+Thenjs(function (cont) {
+  task(10, cont);
+})
+.then(function (cont, arg) {
+  console.log(arg);
+  Thenjs(function (cont2) {
+    task(10, cont2);
+  })
+  .then(function (cont2, arg) {
+    console.log(arg);
+    cont2(new Error('error!'), 123);
+  })
+  .fin(cont);
+})
+.fin(function (cont, error, result) {
+  console.log(error, result);
+  cont();
+});
+```
+在复杂的异步组合中是很有用的。
+
 
 ### Thenjs.prototype.fail(errorHandler)
 
@@ -209,6 +307,31 @@ JSBench Completed!
 `fail` 用于捕捉 `error`，如果在它之前的任意一个链上产生了 `error`，并且未被 `then`, `finally` 等捕获，则会跳过中间链，直接进入 `fail`。返回一个新的 `Thenjs` 对象。
 
 + **errorHandler:** Function，function (cont, error) {}
+
+类似 `.finally(finallyHandler)` ，这里的 `errorHandler` 也可以是 `cont` ：
+
+```js
+Thenjs(function (cont) {
+  task(10, cont);
+})
+.then(function (cont, arg) {
+  console.log(arg);
+  Thenjs(function (cont2) {
+    task(10, cont2);
+  })
+  .then(function (cont2, arg) {
+    console.log(arg);
+    cont2(new Error('error!'), 123);
+  })
+  .fail(cont);
+})
+.then(function (cont, result) {
+  console.log(result);
+})
+.fail(function (cont, error) {
+  console.error(error);
+});
+```
 
 ### Thenjs.prototype.each(array, iterator)
 
@@ -232,6 +355,31 @@ JSBench Completed!
 
 返回 `thunk` 函数。将 `Thenjs` 对象变成一个 `thunk`， 当 `Thenjs` 对象任务执行完毕后，结果会进入 `callback` 执行。`callback` 的第一个参数仍然是 `error`。
 
+```js
+var thunk = Thenjs(function (cont) {
+  task(10, cont);
+})
+.then(function (cont, arg) {
+  console.log(arg);
+  Thenjs(function (cont2) {
+    task(10, cont2);
+  })
+  .then(function (cont2, arg) {
+    console.log(arg);
+    cont2(new Error('error!'), 123);
+  })
+  .fail(cont);
+})
+.then(function (cont, result) {
+  console.log(result);
+})
+.toThunk();
+
+thunk(function (error, result) {
+  console.log(error, result);
+});
+```
+
 ### Thenjs.nextTick(callback, arg1, arg2, ...)
 
 工具函数，类似于 `node.js` 的 `setImmediate`，异步执行 `callback`，而 `arg1`, `arg2` 会成为它的运行参数。
@@ -247,19 +395,18 @@ JSBench Completed!
 全局配置参数，用户可自定义的全局 error 监听函数，`Thenjs.onerror` 默认值为 `undefined`。若定义，当执行链上发生 `error` 且没有被捕捉时，`error` 会进入 `Thenjs.onerror`。
 
 
-## Thunk
-
-**`thunk`** 这一概念，我最初见于 **TJ Holowaychuk** 的 [co](https://github.com/visionmedia/co)。**`thunk`** 是一个被封装了同步或异步任务的函数，这个函数有唯一一个参数 `callback`。运行 **`thunk`**后，当其封装的任务执行完毕时，任务结果会输入 `callback` 执行。`callback` 的第一个参数是 `error`，没有发生 `error` 则为 `null`。
-
-**作者力荐完美的类 `Promise` 的 `thunk` 实现 [thunks](https://github.com/thunks/thunks) 以及基于 `thunks` 的 Web server 框架 [toa](https://github.com/toajs/toa)。**
-
-
 ### Who Used
 
- + AngularJS中文社区：<http://angularjs.cn/>
- + Teambition：<http://teambition.com/>
++ AngularJS中文社区：<http://angularjs.cn/>
++ Teambition：<http://teambition.com/>
 
 
 ## Examples
 
 更多使用案例请参考[jsGen](https://github.com/zensh/jsgen)源代码！
+
+[npm-url]: https://npmjs.org/package/thenjs
+[npm-image]: http://img.shields.io/npm/v/thenjs.svg
+
+[travis-url]: https://travis-ci.org/teambition/then.js
+[travis-image]: http://img.shields.io/travis/teambition/then.js.svg

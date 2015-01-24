@@ -144,8 +144,17 @@ exports.testThen = function (test) {
         cont2(null, [a, b]);
       }, 1, 2);
     }).toThunk();
+
     Thenjs(thunk).then(function (cont2, result) {
       test.deepEqual(result, [1, 2]);
+      console.log(12345);
+      cont2('error!');
+    })
+    .then(function (cont2, result) {
+      test.strictEqual('should not run', true); // 不应该运行
+    }).toThunk()(function(err, result) {
+      console.log(12345678);
+      test.strictEqual(err, 'error!');
       cont(list);
     });
   });

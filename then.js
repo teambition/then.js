@@ -119,8 +119,8 @@
   };
 
   var proto = Thenjs.prototype;
-  // **Thenjs** 对象上的 **finally** 方法，`all` 将废弃
-  proto.fin = proto.all = proto['finally'] = function (finallyHandler) {
+  // **Thenjs** 对象上的 **finally** 方法
+  proto.fin = proto['finally'] = function (finallyHandler) {
     return thenFactory(function (cont, self) {
       self._finally = wrapTaskHandler(cont, finallyHandler);
     }, this);
@@ -191,7 +191,7 @@
         callback.apply(null, self._result);
         self._result = false;
       } else if (self._result !== false) {
-        self._finally = callback;
+        self._finally = self._fail = callback;
       }
     };
   };
@@ -375,6 +375,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.4.6';
+  Thenjs.VERSION = '1.5.0';
   return Thenjs;
 }));
