@@ -215,11 +215,11 @@ Thenjs.eachSeries([0, 1, 2], function (cont, value) {
 });
 ```
 
-### Thenjs.parallel(taskFnArray, [debug])
+### Thenjs.parallel(tasksArray, [debug])
 
-`taskFnArray` 是一个函数（同步或异步）数组，并行执行。返回一个新的 `Thenjs` 对象。
+`tasksArray` 是一个函数（同步或异步）数组，并行执行。返回一个新的 `Thenjs` 对象。
 
-+ **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
++ **tasksArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
 ```js
 Thenjs.parallel([
@@ -231,17 +231,48 @@ Thenjs.parallel([
 });
 ```
 
-### Thenjs.series(taskFnArray, [debug])
+### Thenjs.series(tasksArray, [debug])
 
-`taskFnArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Thenjs` 对象。
+`tasksArray` 是一个函数（同步或异步）数组，串行执行。返回一个新的 `Thenjs` 对象。
 
-+ **taskFnArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
++ **tasksArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
 
 ```js
 Thenjs.series([
   function (cont) { task(88, cont); },
   function (cont) { cont(null, 99); }
 ])
+.then(function (cont, result) {
+  console.log(result);
+});
+```
+
+### Thenjs.parallelLimit(tasksArray, limit, [debug])
+
+`tasksArray` 是一个函数（同步或异步）数组，并行执行，最大并行数量为 `limit`，当并行队列中某一项完成时，会立即补上，也就是说，并发数会一直保持在 `limit`，除非待运行任务不足。返回一个新的 `Thenjs` 对象。
+
++ **tasksArray:** Array，[taskFn1, taskFn2, taskFn3, ...]，其中，taskFn 形式为 function (cont) {}
++ **limit:** Number, 应该大于 0 的整数，取 0 则无限制
+
+```js
+Thenjs.parallel([task1, task2, ..., taskN], 10)
+.then(function (cont, result) {
+  console.log(result);
+});
+```
+
+### Thenjs.eachLimit(array, iterator, limit, [debug])
+
+类似于上，但将 `array` 中的值应用于 `iterator` 函数（同步或异步），并行执行，最大并行数量为 `limit`。返回一个新的 `Thenjs` 对象。
+
++ **array:** Array 或 类数组
++ **iterator:** Function，function (cont, value, index, array) {}
++ **limit:** Number, 应该大于 0 的整数，取 0 则无限制
+
+```js
+Thenjs.eachLimit([1, 2, ..., n], function (cont, value) {
+  task(value * 2, cont);
+}, 10)
 .then(function (cont, result) {
   console.log(result);
 });
@@ -343,13 +374,21 @@ Thenjs(function (cont) {
 
 参数类似 `Thenjs.eachSeries`，返回一个新的 `Thenjs` 对象。
 
-### Thenjs.prototype.parallel(taskFnArray)
+### Thenjs.prototype.parallel(tasksArray)
 
 参数类似 `Thenjs.parallel`，返回一个新的 `Thenjs` 对象。
 
-### Thenjs.prototype.series(taskFnArray)
+### Thenjs.prototype.series(tasksArray)
 
 参数类似 `Thenjs.series`，返回一个新的 `Thenjs` 对象。
+
+### Thenjs.prototype.parallelLimit(tasksArray, limit)
+
+参数类似 `Thenjs.parallelLimit`，返回一个新的 `Thenjs` 对象。
+
+### Thenjs.prototype.eachLimit(array, iterator, limit)
+
+参数类似 `Thenjs.eachLimit`，返回一个新的 `Thenjs` 对象。
 
 ### Thenjs.prototype.toThunk()(callback)
 
