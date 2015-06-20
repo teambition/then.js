@@ -129,15 +129,15 @@
   // **Thenjs** 对象上的 **then** 方法
   proto.then = function (successHandler, errorHandler) {
     return thenFactory(function (cont, self) {
-      self._success = wrapTaskHandler(cont, successHandler);
-      self._error = errorHandler && wrapTaskHandler(cont, errorHandler);
+      if (successHandler) self._success = wrapTaskHandler(cont, successHandler);
+      if (errorHandler) self._error = wrapTaskHandler(cont, errorHandler);
     }, this);
   };
 
   // **Thenjs** 对象上的 **fail** 方法
   proto.fail = proto['catch'] = function (errorHandler) {
     return thenFactory(function (cont, self) {
-      self._fail = wrapTaskHandler(cont, errorHandler);
+      self._error = wrapTaskHandler(cont, errorHandler);
       // 对于链上的 fail 方法，如果无 error ，则穿透该链，将结果输入下一链
       self._success = function () {
         cont.apply(null, [null].concat(slice(arguments)));
@@ -200,7 +200,7 @@
   // **continuation** 收集任务结果，触发下一个链，它被注入各个 handler
   // 其参数采用 **node.js** 的 **callback** 形式：(error, arg1, arg2, ...)
   function continuation(error) {
-    var self = this, args = arguments;
+    var self = this, args = slice(arguments);
 
     // then链上的结果已经处理，若重复执行 cont 则直接跳过；
     if (self._result === false) return;
@@ -211,37 +211,43 @@
     // 标记已进入 continuation 处理
     self._result = false;
 
-    carry(function (err) {
-      continuationError(self, err, error);
-    }, continuationExec, self, args, error);
+    carry(function(err) {
+      if (err === args[0]) continuationError(self, err);
+      else continuation.call(self._nextThen, err);
+    }, continuationExec, self, args);
   }
 
-  function continuationExec(ctx, args, error) {
-    if (ctx._finally) return ctx._finally.apply(null, args);
-    if (error != null) throw error;
 
+  function continuationExec(ctx, args) {
+    if (args[0] == null) args[0] = null;
+    else if (!ctx._finally) throw args[0];
+    if (ctx._finally) return ctx._finally.apply(null, args);
     var success = ctx._success || ctx._each || ctx._eachSeries || ctx._parallel || ctx._series;
     if (success) return success.apply(null, slice(args, 1));
     // 对于正确结果，**Thenjs** 链上没有相应 handler 处理，则在 **Thenjs** 链上保存结果，等待下一次处理。
     ctx._result = args;
   }
 
-  function continuationError(ctx, err, error) {
-    var _nextThen = ctx, errorHandler = ctx._error || ctx._fail;
-    // 本次 continuation 捕捉的 error，直接放到后面的链处理
-    if (ctx._nextThen && error == null) {
-      errorHandler = null;
-      _nextThen = ctx._nextThen;
-    }
-    // 获取本链的 error handler 或者链上后面的fail handler
-    while (!errorHandler && _nextThen) {
-      errorHandler = _nextThen._fail;
+  function continuationError(ctx, err) {
+    var _nextThen = ctx;
+    var errorHandler = ctx._error || ctx._finally;
+
+    // 获取后链的 error handler
+    while (!errorHandler && _nextThen._nextThen) {
       _nextThen = _nextThen._nextThen;
+      errorHandler = _nextThen._error || _nextThen._finally;
     }
-    if (errorHandler) return errorHandler(err);
+
+    if (errorHandler) {
+      return carry(function (_err) {
+        // errorHandler 存在则 _nextThen._nextThen 必然存在
+        continuation.call(_nextThen._nextThen, _err);
+      }, errorHandler, err);
+    }
     // 如果定义了全局 **onerror**，则用它处理
     if (Thenjs.onerror) return Thenjs.onerror(err);
     // 对于 error，如果没有任何 handler 处理，则保存到链上最后一个 **Thenjs** 对象，等待下一次处理。
+    while (_nextThen._nextThen) _nextThen = _nextThen._nextThen;
     _nextThen._result = [err];
   }
 
@@ -375,6 +381,6 @@
   }
 
   Thenjs.NAME = 'Thenjs';
-  Thenjs.VERSION = '1.5.0';
+  Thenjs.VERSION = '1.5.1';
   return Thenjs;
 }));
