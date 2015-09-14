@@ -814,7 +814,6 @@ describe('Thenjs', function () {
     })
 
     it('Then.onerror', function (done) {
-
       Then.onerror = function (err) {
         assert.strictEqual(err instanceof Error, true)
         assert.strictEqual(err.message.indexOf('noneFn2') >= 0, true)
@@ -841,5 +840,4 @@ describe('Thenjs', function () {
         })
     })
   })
-
 })

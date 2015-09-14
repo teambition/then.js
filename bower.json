@@ -1,7 +1,7 @@
 {
   "name": "thenjs",
   "main": "then.js",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "homepage": "https://github.com/teambition/then.js",
   "authors": [

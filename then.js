@@ -81,7 +81,8 @@
 
   // ## **Thenjs** 主函数
   function Thenjs (start, debug) {
-    var self = this, cont
+    var self = this
+    var cont
     if (start instanceof Thenjs) return start
     if (!(self instanceof Thenjs)) return new Thenjs(start, debug)
     self._chain = 0
