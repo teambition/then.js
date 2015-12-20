@@ -446,6 +446,6 @@
   }
 
   Thenjs.NAME = 'Thenjs'
-  Thenjs.VERSION = '2.0.0'
+  Thenjs.VERSION = '2.0.2'
   return Thenjs
 }))
