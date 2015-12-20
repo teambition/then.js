@@ -1,6 +1,7 @@
 {
   "name": "thenjs",
   "main": "then.js",
+  "typings": "./thenjs.d.ts",
   "version": "2.0.1",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "authors": [
