@@ -2,7 +2,7 @@
   "name": "thenjs",
   "main": "then.js",
   "typings": "./thenjs.d.ts",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "authors": [
     "Yan Qing <admin@zensh.com>"
@@ -28,19 +28,18 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "gulp": "^3.9.0",
-    "gulp-mocha": "^2.2.0",
-    "jsbench": ">=0.5.x",
-    "async": ">=1.5.0",
-    "bluebird": ">=3.1.1",
-    "co": ">=4.6.0",
-    "rsvp": ">=3.1.0",
-    "when": ">=3.7.5",
-    "thunks": ">=4.1.1",
-    "standard": "^5.4.1"
+    "async": "^1.5.2",
+    "bluebird": "^3.3.4",
+    "co": "^4.6.0",
+    "jsbench": "^1.0.x",
+    "rsvp": "^3.2.1",
+    "standard": "^6.0.8",
+    "thunks": "^4.1.5",
+    "tman": "^0.5.2",
+    "when": "^3.7.7"
   },
   "scripts": {
-    "test": "standard && gulp test"
+    "test": "standard && tman"
   },
   "files": [
     "README.md",

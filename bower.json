@@ -1,7 +1,7 @@
 {
   "name": "thenjs",
   "main": "then.js",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "homepage": "https://github.com/teambition/then.js",
   "authors": [
@@ -20,7 +20,6 @@
     "node_modules",
     "benchmark",
     "test",
-    "examples",
-    "Gruntfile.js"
+    "examples"
   ]
 }
