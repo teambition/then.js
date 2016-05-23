@@ -29,17 +29,16 @@
   "dependencies": {},
   "devDependencies": {
     "async": "^1.5.2",
-    "bluebird": "^3.3.4",
+    "bluebird": "^3.4.0",
     "co": "^4.6.0",
     "jsbench": "^1.0.x",
-    "rsvp": "^3.2.1",
-    "standard": "^6.0.8",
-    "thunks": "^4.1.5",
-    "tman": "^0.5.2",
-    "when": "^3.7.7"
+    "standard": "^7.1.0",
+    "thunks": "^4.2.0",
+    "tman": "^0.9.6"
   },
   "scripts": {
-    "test": "standard && tman"
+    "test": "standard && tman",
+    "bench": "node benchmark/index"
   },
   "files": [
     "README.md",

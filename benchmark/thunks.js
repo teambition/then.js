@@ -10,17 +10,17 @@ module.exports = function (len, syncMode) {
 
   if (syncMode) { // 模拟同步任务
     task = function (x) {
-      return thunk(function (callback) {
+      return function (callback) {
         callback(null, x)
-      })
+      }
     }
   } else { // 模拟异步任务
-    task = function (x, callback) {
-      return thunk(function (callback) {
+    task = function (x) {
+      return function (callback) {
         setImmediate(function () {
           callback(null, x)
         })
-      })
+      }
     }
   }
 
