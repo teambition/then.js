@@ -32,7 +32,7 @@ module.exports = function (len, syncMode) {
 
   return function (callback) {
     // co 测试主体
-    co(function *() {
+    co(function * () {
       // 并行 list 队列
       yield list.map(function (i) {
         return task(i)

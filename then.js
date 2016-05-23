@@ -369,9 +369,13 @@
     function genNext (index) {
       function next (error, value) {
         if (pending <= 0) return
-        if (error != null) return (pending = 0, cont(error))
-        result[index] = value
-        return !--pending && cont(null, result)
+        if (error != null) {
+          pending = 0
+          cont(error)
+        } else {
+          result[index] = value
+          return !--pending && cont(null, result)
+        }
       }
       next._isCont = true
       return next
@@ -410,7 +414,9 @@
     var finished = false
 
     limit = limit >= 1 ? Math.floor(limit) : Number.MAX_VALUE
+    // eslint-disable-next-line
     do { checkNext() } while (index < len && pending < limit)
+
     function checkNext () {
       if (finished) return
       if (index >= len) {
