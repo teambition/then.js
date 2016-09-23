@@ -1,5 +1,5 @@
 'use strict'
-/*global */
+/* global */
 
 var async = require('async')
 

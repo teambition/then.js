@@ -1,5 +1,5 @@
 'use strict'
-/*global console, Promise*/
+/* global console, Promise */
 
 var JSBench = require('jsbench')
 var len = 1000 // 任务队列长度

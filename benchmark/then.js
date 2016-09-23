@@ -1,5 +1,5 @@
 'use strict'
-/*global */
+/* global */
 
 var Thenjs = require('../then')
 

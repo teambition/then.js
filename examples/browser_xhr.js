@@ -1,5 +1,5 @@
 'use strict'
-/*global console, Thenjs, XMLHttpRequest*/
+/* global console, Thenjs, XMLHttpRequest */
 
 function request (url) {
   return function (callback) {

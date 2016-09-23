@@ -1,5 +1,5 @@
 'use strict'
-/*global Promise */
+/* global Promise */
 
 var thunk = require('thunks')()
 

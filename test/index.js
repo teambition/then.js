@@ -1,5 +1,5 @@
 'use strict'
-/*global describe, it, Promise, noneFn1, noneFn2*/
+/* global describe, it, Promise, noneFn1, noneFn2 */
 
 var assert = require('assert')
 var Then = require('../then')

@@ -1,8 +1,6 @@
 {
   "name": "thenjs",
-  "main": "then.js",
-  "typings": "./thenjs.d.ts",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "authors": [
     "Yan Qing <admin@zensh.com>"
@@ -10,6 +8,12 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/teambition/then.js"
+  },
+  "main": "then.js",
+  "typings": "index.d.ts",
+  "scripts": {
+    "test": "standard && tman",
+    "bench": "node benchmark/index"
   },
   "homepage": "https://github.com/teambition/then.js",
   "keywords": [
@@ -28,21 +32,17 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "async": "^1.5.2",
-    "bluebird": "^3.4.0",
+    "async": "^2.0.1",
+    "bluebird": "^3.4.6",
     "co": "^4.6.0",
-    "jsbench": "^1.0.x",
-    "standard": "^7.1.0",
-    "thunks": "^4.2.0",
-    "tman": "^0.9.6"
-  },
-  "scripts": {
-    "test": "standard && tman",
-    "bench": "node benchmark/index"
+    "jsbench": "^1.1.x",
+    "standard": "^8.1.0",
+    "thunks": "^4.7.4",
+    "tman": "^1.5.3"
   },
   "files": [
     "README.md",
     "then.js",
-    "thenjs.d.ts"
+    "index.d.ts"
   ]
 }

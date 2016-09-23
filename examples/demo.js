@@ -1,5 +1,5 @@
 'use strict'
-/*global console*/
+/* global console */
 
 var Thenjs = require('../then.js')
 
