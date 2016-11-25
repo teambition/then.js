@@ -7,6 +7,9 @@
   'use strict'
 
   if (typeof module === 'object' && typeof module.exports === 'object') {
+    /**
+     * @type {{then:function}}
+     */
     module.exports = factory()
   } else if (typeof define === 'function' && define.amd) {
     define([], factory)
