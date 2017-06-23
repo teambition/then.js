@@ -22,9 +22,12 @@
   var maxTickDepth = 100
   var toString = Object.prototype.toString
   var hasOwnProperty = Object.prototype.hasOwnProperty
-  var nextTick = typeof setImmediate === 'function' ? setImmediate : function (fn) {
-    setTimeout(fn, 0)
-  }
+  // Save timer references to avoid other module (Sinon) interfering.
+  var $setTimeout = setTimeout
+  /* istanbul ignore next */
+  var nextTick = typeof setImmediate === 'function'
+    ? setImmediate : typeof Promise === 'function'
+    ? function (fn) { Promise.resolve().then(fn) } : function (fn) { $setTimeout(fn, 0) }
   var isArray = Array.isArray || function (obj) {
     return toString.call(obj) === '[object Array]'
   }
@@ -455,6 +458,6 @@
   }
 
   Thenjs.NAME = 'Thenjs'
-  Thenjs.VERSION = '2.0.3'
+  Thenjs.VERSION = '2.0.6'
   return Thenjs
 }))

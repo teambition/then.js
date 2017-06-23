@@ -1,6 +1,6 @@
 {
   "name": "thenjs",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "The fastest, smallest, fully compatible, full-featured asynchronous module!",
   "authors": [
     "Yan Qing <admin@zensh.com>"
@@ -32,13 +32,13 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "async": "^2.1.4",
-    "bluebird": "^3.4.6",
+    "async": "^2.4.1",
+    "bluebird": "^3.5.0",
     "co": "^4.6.0",
     "jsbench": "^1.1.x",
-    "standard": "^8.6.0",
-    "thunks": "^4.7.5",
-    "tman": "^1.6.3"
+    "standard": "^10.0.2",
+    "thunks": "^4.8.0",
+    "tman": "^1.6.9"
   },
   "files": [
     "README.md",
