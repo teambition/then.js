@@ -410,65 +410,65 @@ describe('Thenjs', function () {
       var pending = []
       Then()
         .series([
-            function (cont, result) {
-              pending.push(1)
-              assert.strictEqual(pending.length, 1)
-              assert.equal('undefined', typeof result);
-              cont(null, 1)
-            },
-            function (cont, result) {
-              assert.strictEqual(pending.length, 1)
+          function (cont, result) {
+            pending.push(1)
+            assert.strictEqual(pending.length, 1)
+            assert.equal('undefined', typeof result)
+            cont(null, 1)
+          },
+          function (cont, result) {
+            assert.strictEqual(pending.length, 1)
+            setTimeout(function () {
+              pending.push(2)
+              assert.strictEqual(pending.length, 2)
+              assert.equal(1, result[0])
+              cont(null, 2, 3)
+            })
+          },
+          function (cont, result) {
+            pending.push(3)
+            assert.strictEqual(pending.length, 3)
+            assert.equal(1, result[0])
+            assert.equal(2, result[1])
+            cont(null, 4)
+          }
+        ])
+        .then(function (cont, res) {
+          assert.deepEqual(pending, [1, 2, 3])
+          assert.deepEqual(res, [1, 2, 4])
+          cont(null, [
+            function (cont) {
               setTimeout(function () {
-                pending.push(2)
-                assert.strictEqual(pending.length, 2)
-                assert.equal(1, result[0])
-                cont(null, 2, 3)
+                cont(null, x)
               })
             },
             function (cont, result) {
-              pending.push(3)
-              assert.strictEqual(pending.length, 3)
-              assert.equal(1, result[0])
-              assert.equal(2, result[1])
-              cont(null, 4)
-            }
-          ])
-          .then(function (cont, res) {
-            assert.deepEqual(pending, [1, 2, 3])
-            assert.deepEqual(res, [1, 2, 4])
-            cont(null, [
-              function (cont) {
-                setTimeout(function () {
-                  cont(null, x)
-                })
-              },
-              function (cont, result) {
-                assert.deepEqual(x, result[0])
-                cont(null, null)
-              }
-            ])
-          })
-          .series(null)
-          .then(function (cont, res) {
-            assert.deepEqual(res, [x, null])
-            cont(null, x)
-          })
-          .series([
-            function (cont) {
-              cont(null, x)
-            },
-            function (cont, result) {
               assert.deepEqual(x, result[0])
-              noneFn1()
-              cont(null, x)
+              cont(null, null)
             }
           ])
-          .fin(function (cont, err, res) {
-            assert.strictEqual(err instanceof Error, true)
-            assert.strictEqual(err.message.indexOf('noneFn1') >= 0, true)
-            assert.strictEqual(res, void 0)
-            cont()
-          }).toThunk()(done)
+        })
+        .series(null)
+        .then(function (cont, res) {
+          assert.deepEqual(res, [x, null])
+          cont(null, x)
+        })
+        .series([
+          function (cont) {
+            cont(null, x)
+          },
+          function (cont, result) {
+            assert.deepEqual(x, result[0])
+            noneFn1()
+            cont(null, x)
+          }
+        ])
+        .fin(function (cont, err, res) {
+          assert.strictEqual(err instanceof Error, true)
+          assert.strictEqual(err.message.indexOf('noneFn1') >= 0, true)
+          assert.strictEqual(res, void 0)
+          cont()
+        }).toThunk()(done)
     })
 
     it('.each', function (done) {
