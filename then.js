@@ -408,7 +408,7 @@
       if (++i > end) return cont(null, result)
       // 先同步执行，嵌套达到 maxTickDepth 时转成一次异步执行
       run = --stack > 0 ? carry : (stack = maxTickDepth, defer)
-      run(cont, tasks[i], next)
+      run(cont, tasks[i], next,result)
     }
   }
 
