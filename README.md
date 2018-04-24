@@ -247,6 +247,20 @@ Thenjs.series([
 });
 ```
 
++ taskFn 形式为 function(cont,result){} 时,通过result可获取之前项的返回值
+
+```js
+Thenjs.series([
+  function (cont,result) { typeof result === 'undefined'; cont(null,100) },
+  function (cont,result) { assert.equal(100,result[0]);cont(null, 99); },
+  function (cont,result) { assert.equal(100,result[0]); assert.equal(99,result[1]);cont(null, 98); }
+])
+.then(function (cont, result) {
+  console.log(result);
+});
+
+```
+
 ### Thenjs.parallelLimit(tasksArray, limit, [debug])
 
 `tasksArray` 是一个函数（同步或异步）数组，并行执行，最大并行数量为 `limit`，当并行队列中某一项完成时，会立即补上，也就是说，并发数会一直保持在 `limit`，除非待运行任务不足。返回一个新的 `Thenjs` 对象。
