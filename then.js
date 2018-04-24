@@ -27,7 +27,7 @@
   /* istanbul ignore next */
   var nextTick = typeof setImmediate === 'function'
     ? setImmediate : typeof Promise === 'function'
-    ? function (fn) { Promise.resolve().then(fn) } : function (fn) { $setTimeout(fn, 0) }
+      ? function (fn) { Promise.resolve().then(fn) } : function (fn) { $setTimeout(fn, 0) }
   var isArray = Array.isArray || function (obj) {
     return toString.call(obj) === '[object Array]'
   }
@@ -458,6 +458,6 @@
   }
 
   Thenjs.NAME = 'Thenjs'
-  Thenjs.VERSION = '2.0.6'
+  Thenjs.VERSION = '2.1.0'
   return Thenjs
 }))
